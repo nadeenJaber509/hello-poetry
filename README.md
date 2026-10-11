@@ -1,46 +1,70 @@
-# Hello World Python Project
+# Hello Poetry 👋
 
-A simple Hello World Python project created using Poetry for dependency management and pytest for testing.
+A simple interactive Python web application built with **Streamlit**, using **Poetry** for dependency management and **pytest** for automated testing.
 
-## Requirements
+## Features
 
-- Python 3.14 or later (below Python 4.0)
+- Interactive web interface using Streamlit
+- Personalized greeting based on the user's name
+- Default "Hello, World!" greeting
+- Automated tests for the Python function and Streamlit app
+
+## Technologies
+
+- Python 3.14
 - Poetry
+- Streamlit
+- pytest
 
-## Installation
+## Getting Started
 
-Install the project dependencies:
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/nadeenJaber509/hello-poetry.git
+cd hello-poetry
+```
+
+### 2. Install dependencies
+
+Make sure Python 3.14 and Poetry are installed.
 
 ```bash
 poetry install
 ```
 
-## Run
-
-Run the Hello World function:
+### 3. Run the application
 
 ```bash
-poetry run python -c "from hello_poetry.hello import hello; print(hello())"
+poetry run streamlit run app.py
 ```
 
-Expected output:
+Open http://localhost:8501 in your browser.
 
-```text
-Hello, World!
-```
-
-## Testing
-
-Run the automated test:
+### 4. Run tests
 
 ```bash
 poetry run pytest -v
 ```
 
-The test verifies that the `hello()` function returns the expected message.
+## Project Structure
 
-## Technologies
+```text
+hello-poetry/
+├── app.py
+├── src/
+│   └── hello_poetry/
+│       ├── __init__.py
+│       └── hello.py
+├── tests/
+│   ├── test_hello.py
+│   └── test_app.py
+├── pyproject.toml
+├── poetry.lock
+├── README.md
+└── .gitignore
+```
 
-- Python
-- Poetry
-- pytest
+## Collaboration
+
+This repository is shared among team members for our AI training program. Project dependencies are managed through Poetry, and all changes are tracked using Git and GitHub.
