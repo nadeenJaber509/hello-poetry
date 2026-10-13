@@ -22,4 +22,4 @@ def test_arabic_empty_name():
 
 
 def test_name_whitespace():
-    assert personalized_hello("  Nadeen  ") == "Hello, Nadeen!"
+    assert personalized_hello("  Nadeen  ", "English") == "Hello, Nadeen!"
