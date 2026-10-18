@@ -124,3 +124,50 @@ The cloud application is connected to the `nadeen-jaber` branch, allowing change
 ## Development
 
 Developed as part of the **ProGineer AI Training Program**, focusing on Python project management, data analysis, automated testing, GitHub collaboration, and cloud deployment.
+
+## Task 3 — Data Cleaning
+
+The Clean Data page allows users to inspect, clean, and prepare
+CSV datasets for machine learning.
+
+### Features
+
+- Detect missing values, duplicate rows, and column data types.
+- Identify potential outliers using the IQR method.
+- Convert numeric-looking text columns into numeric values.
+- Handle missing values using drop, mean, median, or mode.
+- Remove duplicate rows.
+- Encode categorical features using One-Hot Encoding.
+- Scale numerical features using StandardScaler.
+- Split datasets into training and testing sets.
+- Compare datasets before and after cleaning.
+- Download the cleaned dataset as CSV.
+
+### Data Leakage Prevention
+
+The machine learning preparation workflow separates data cleaning
+from fitted preprocessing.
+
+The dataset is split into training and testing sets before
+fitting imputers, encoders, or scalers.
+
+Preprocessing is fitted on training data only and then applied
+to testing data using the same learned parameters.
+
+### Example Dataset
+
+The included `messy_customers.csv` contains 515 rows,
+including 15 duplicates and missing values.
+
+Using Fill with Mode and Remove Duplicates produces:
+
+- 500 rows
+- 0 missing values
+- 0 duplicates
+
+### Tests
+
+Run all tests with:
+
+```bash
+poetry run pytest -v
