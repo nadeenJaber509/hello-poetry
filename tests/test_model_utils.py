@@ -1,5 +1,7 @@
 import pandas as pd
+
 from model_utils import train_and_evaluate
+
 
 def test_decision_tree_returns_metrics():
     df = pd.DataFrame({

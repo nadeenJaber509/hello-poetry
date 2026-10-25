@@ -1,5 +1,7 @@
 import pandas as pd
+
 from cleaning_utils import clean_dataframe
+
 
 def test_fill_missing_numeric_and_text():
     df = pd.DataFrame({"Age": [10, None, 30], "City": ["Ramallah", None, "Nablus"]})

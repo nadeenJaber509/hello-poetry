@@ -1,5 +1,6 @@
 import pandas as pd
 
+
 def load_csv(source):
     """Load CSV data from a path or uploaded file-like object."""
     df = pd.read_csv(source)

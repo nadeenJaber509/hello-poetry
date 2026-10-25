@@ -1,6 +1,7 @@
 import pandas as pd
 from pandas.api.types import is_numeric_dtype
 
+
 def clean_dataframe(df, fill_missing=True, remove_duplicates=True):
     """Return a cleaned copy of a DataFrame.
 

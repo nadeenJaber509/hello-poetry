@@ -1,0 +1,41 @@
+id,comment,label,prediction,correct
+1,The delivery was faster than I expected.,positive,positive,True
+2,The app crashes every time I open my orders.,negative,negative,True
+3,The package arrived on Tuesday.,neutral,neutral,True
+4,"Great quality for the price, I will order again.",positive,positive,True
+5,Support never replied to my email.,negative,negative,True
+6,It does what it says. Nothing more.,neutral,neutral,True
+7,The screen is beautiful but the battery dies by noon.,neutral,neutral,True
+8,Worst purchase I have made this year.,negative,negative,True
+9,Setup took five minutes and everything worked.,positive,positive,True
+10,"Not bad, not great.",neutral,neutral,True
+11,The staff were friendly and solved my problem quickly.,positive,positive,True
+12,I waited two weeks and the item never arrived.,negative,negative,True
+13,I received the invoice by email.,neutral,neutral,True
+14,"Excellent service, highly recommended.",positive,positive,True
+15,The size is smaller than the photos show.,negative,negative,True
+16,"Packaging was fine, the product is average.",neutral,neutral,True
+17,Best app I have used for tracking orders.,positive,positive,True
+18,They charged me twice and refused to refund.,negative,negative,True
+19,Okay for the price.,neutral,positive,False
+20,Everything works perfectly after the update.,positive,positive,True
+21,The website is slow and keeps logging me out.,negative,negative,True
+22,I ordered the blue one and got the blue one.,neutral,neutral,True
+23,"Love the design, very easy to use.",positive,positive,True
+24,Customer service was rude and unhelpful.,negative,negative,True
+25,"Fast shipping, but the box was damaged.",neutral,neutral,True
+26,Totally worth the money.,positive,positive,True
+27,The product stopped working after two days.,negative,negative,True
+28,I will see how it performs over the next weeks.,neutral,neutral,True
+29,Impressed by how quickly they fixed the issue.,positive,positive,True
+30,Would not recommend to anyone.,negative,negative,True
+31,"Amazing, another update that broke everything.",negative,negative,True
+32,"The app is okay, but the support is terrible.",negative,negative,True
+33,Works perfectly. No complaints.,positive,positive,True
+34,I waited two weeks and got nothing.,negative,negative,True
+35,"Well, that was a wonderful waste of money.",negative,negative,True
+36,It does what it says.,neutral,neutral,True
+37,"Good price, but the quality is disappointing.",neutral,neutral,True
+38,Love it!,positive,positive,True
+39,Not bad at all.,positive,positive,True
+40,"Fast delivery, although the product arrived damaged.",neutral,neutral,True

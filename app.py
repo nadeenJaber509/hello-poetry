@@ -1,15 +1,25 @@
-import streamlit as st
-import pandas as pd
 import os
+
+import pandas as pd
+import streamlit as st
+
+from task6.llm import ask_llm, parse_label
+from task6.prompts import PROMPT_A, PROMPT_B, PROMPT_C
 
 st.set_page_config(page_title="Progineer Training", page_icon="", layout="wide")
 
-st.title("Progineer Training — Tasks 1 to 4")
-st.write("A combined Streamlit project: Hello World, Data Explorer, Data Cleaning, and Model Training.")
+st.title("Progineer Training — Tasks 1 to 6")
+st.write("A combined Streamlit project with data exploration, cleaning, model training, and LLM classification.")
 
 task = st.sidebar.radio(
     "Choose a task",
-    ["Task 1 — Hello World", "Task 2 — Data Explorer", "Task 3 — Data Cleaning", "Task 4 — Train Model"],
+    [
+        "Task 1 — Hello World",
+        "Task 2 — Data Explorer",
+        "Task 3 — Data Cleaning",
+        "Task 4 — Train Model",
+        "Task 6 — Classifier Lab",
+    ],
 )
 
 if task == "Task 1 — Hello World":
@@ -18,21 +28,21 @@ if task == "Task 1 — Hello World":
     st.write("This is the first Streamlit task.")
 
 elif task == "Task 2 — Data Explorer":
-    from DataExpoler.data_utils import load_csv, dataset_summary
+    from DataExpoler.data_utils import load_csv
     st.header("Task 2: Data Explorer")
     uploaded = st.file_uploader("Upload a CSV file", type=["csv"], key="explorer_upload")
     default_path = os.path.join(os.path.dirname(__file__), "DataExpoler", "student-dataset.csv")
     if uploaded is not None:
         try:
             df = load_csv(uploaded)
-        except Exception as e:
+        except (ValueError, OSError, pd.errors.ParserError) as e:
             st.error(f"Could not read this CSV file: {e}")
             st.stop()
     else:
         st.caption("Showing the included sample dataset. Upload your own CSV to explore it.")
         try:
             df = load_csv(default_path)
-        except Exception as e:
+        except (ValueError, OSError, pd.errors.ParserError) as e:
             st.error(f"Could not load the sample dataset: {e}")
             st.stop()
 
@@ -64,7 +74,7 @@ elif task == "Task 3 — Data Cleaning":
     if uploaded is not None:
         try:
             source = pd.read_csv(uploaded)
-        except Exception as e:
+        except (ValueError, OSError, pd.errors.ParserError) as e:
             st.error(f"Could not read this CSV file: {e}")
             st.stop()
     else:
@@ -98,7 +108,7 @@ elif task == "Task 4 — Train Model":
     if uploaded is not None:
         try:
             raw = pd.read_csv(uploaded)
-        except Exception as e:
+        except (ValueError, OSError, pd.errors.ParserError) as e:
             st.error(f"Could not read this CSV file: {e}")
             st.stop()
     else:
@@ -134,5 +144,185 @@ elif task == "Task 4 — Train Model":
                 st.subheader("Confusion matrix")
                 st.dataframe(result["confusion_matrix"])
                 st.caption("Accuracy is a useful starting metric, but it can be misleading when classes are imbalanced. Compare test accuracy with the majority-class baseline.")
-            except Exception as e:
+            except (ValueError, OSError, pd.errors.ParserError) as e:
                 st.error(f"Could not train this model: {e}")
+
+elif task == "Task 6 — Classifier Lab":
+    st.header("Task 6: LLM Sentiment Classifier")
+    st.write("Enter a comment, choose a prompt, and predict its sentiment.")
+
+    prompt_options = {
+        "Prompt A — Zero-Shot": PROMPT_A,
+        "Prompt B — Few-Shot": PROMPT_B,
+        "Prompt C — Improved": PROMPT_C,
+    }
+
+    selected_prompt = st.selectbox(
+        "Choose a prompt",
+        list(prompt_options.keys()),
+    )
+
+    model = st.selectbox(
+        "Choose model",
+        ["openai/gpt-oss-120b", "openai/gpt-oss-20b"],
+    )
+
+    comment = st.text_area(
+        "Enter a comment",
+        placeholder="The delivery was fast and the product was excellent.",
+    )
+
+    if st.button("Predict sentiment", type="primary"):
+        if not comment.strip():
+            st.warning("Please enter a comment.")
+        else:
+            try:
+                with st.spinner("Classifying..."):
+                    raw_result = ask_llm(
+                        system_prompt=prompt_options[selected_prompt],
+                        user_message=comment,
+                        model=model,
+                        temperature=0,
+                    )
+                    label = parse_label(raw_result)
+
+                if label == "positive":
+                    st.success("Sentiment: Positive")
+                elif label == "negative":
+                    st.error("Sentiment: Negative")
+                elif label == "neutral":
+                    st.info("Sentiment: Neutral")
+                else:
+                    st.warning("The model returned an invalid response.")
+                    st.code(raw_result)
+
+            except (ValueError, OSError, RuntimeError) as error:
+                st.error(
+                    "Classification failed. Check your Groq API key, "
+                    "internet connection, and model availability."
+                )
+                st.caption(f"Error details: {error}")
+
+    st.divider()
+    st.subheader("Evaluation Results")
+
+    results_files = {
+        "120b — Prompt A": "results_A_zero_shot_openai_gpt-oss-120b.csv",
+        "120b — Prompt B": "results_B_few_shot_openai_gpt-oss-120b.csv",
+        "120b — Prompt C": "results_C_improved_openai_gpt-oss-120b.csv",
+        "20b — Prompt B": "results_B_few_shot_openai_gpt-oss-20b.csv",
+    }
+
+    results_dir = os.path.join(os.path.dirname(__file__), "task6")
+    summaries = []
+    loaded_results = {}
+
+    for experiment, filename in results_files.items():
+        path = os.path.join(results_dir, filename)
+
+        if not os.path.exists(path):
+            st.warning(f"Results file not found: {filename}")
+            continue
+
+        try:
+            result_df = pd.read_csv(path)
+
+            required_columns = {"label", "prediction"}
+            if not required_columns.issubset(result_df.columns):
+                st.warning(
+                    f"{filename} is missing required columns: "
+                    "'label' and 'prediction'."
+                )
+                continue
+
+            # Normalize labels to avoid case and whitespace mismatches.
+            result_df["label"] = (
+                result_df["label"].astype(str).str.strip().str.lower()
+            )
+            result_df["prediction"] = (
+                result_df["prediction"].astype(str).str.strip().str.lower()
+            )
+
+            valid_labels = {"positive", "negative", "neutral"}
+            valid = result_df["prediction"].isin(valid_labels)
+            accuracy = (
+                (
+                    result_df.loc[valid, "label"]
+                    == result_df.loc[valid, "prediction"]
+                ).mean()
+                if valid.any()
+                else 0.0
+            )
+
+            loaded_results[experiment] = result_df
+            summaries.append({
+                "Experiment": experiment,
+                "Accuracy": f"{accuracy:.1%}",
+                "Invalid predictions": int((~valid).sum()),
+                "Comments": len(result_df),
+            })
+
+        except (ValueError, OSError, pd.errors.ParserError) as error:
+            st.warning(f"Could not load {filename}: {error}")
+
+    if summaries:
+        st.subheader("Accuracy Summary")
+        st.dataframe(
+            pd.DataFrame(summaries),
+            hide_index=True,
+            use_container_width=True,
+        )
+
+        selected_experiment = st.selectbox(
+            "Inspect an experiment",
+            list(loaded_results.keys()),
+        )
+        inspected = loaded_results[selected_experiment]
+
+        labels = ["negative", "neutral", "positive"]
+        valid_labels = {"positive", "negative", "neutral"}
+        valid_rows = (
+            inspected["label"].isin(valid_labels)
+            & inspected["prediction"].isin(valid_labels)
+        )
+        evaluated = inspected.loc[valid_rows].copy()
+
+        st.subheader("Confusion Matrix")
+        if evaluated.empty:
+            st.info("There are no valid predictions to evaluate.")
+        else:
+            matrix = pd.crosstab(
+                evaluated["label"],
+                evaluated["prediction"],
+            ).reindex(
+                index=labels,
+                columns=labels,
+                fill_value=0,
+            )
+            st.dataframe(matrix, use_container_width=True)
+
+        st.subheader("Incorrect Predictions")
+        wrong = evaluated[
+            evaluated["label"] != evaluated["prediction"]
+        ]
+
+        if wrong.empty:
+            st.success("No incorrect predictions in this experiment.")
+        else:
+            display_columns = [
+                column for column in
+                ["id", "comment", "label", "prediction"]
+                if column in wrong.columns
+            ]
+            st.dataframe(
+                wrong[display_columns],
+                hide_index=True,
+                use_container_width=True,
+            )
+
+    else:
+        st.warning(
+            "No readable evaluation results were found. "
+            "Check that the CSV files exist and contain 'label' "
+            "and 'prediction' columns."
+        )
