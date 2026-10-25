@@ -1,9 +1,8 @@
 
-import streamlit as st
 import pandas as pd
+import streamlit as st
 
-from hello_poetry.data_utils import load_csv, analyze_data
-
+from hello_poetry.data_utils import analyze_data, load_csv
 
 st.set_page_config(
     page_title="Data Explorer",

@@ -1,9 +1,8 @@
 from io import StringIO
 
 import pandas as pd
-import pytest
 
-from hello_poetry.data_utils import load_csv, analyze_data
+from hello_poetry.data_utils import analyze_data, load_csv
 
 
 def test_load_valid_csv():

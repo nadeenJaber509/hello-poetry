@@ -1,14 +1,13 @@
 
 import pandas as pd
-import pytest
 
 from hello_poetry.cleaning_utils import (
+    convert_numeric_column,
+    detect_outliers,
     get_data_quality_report,
     handle_missing_values,
-    remove_duplicates,
-    detect_outliers,
-    convert_numeric_column,
     prepare_train_test_data,
+    remove_duplicates,
 )
 
 

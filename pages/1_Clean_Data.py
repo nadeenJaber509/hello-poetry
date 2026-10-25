@@ -1,17 +1,15 @@
 
 import streamlit as st
-import pandas as pd
 
-from hello_poetry.data_utils import load_csv
 from hello_poetry.cleaning_utils import (
-    get_data_quality_report,
     convert_numeric_column,
-    handle_missing_values,
-    remove_duplicates,
     detect_outliers,
+    get_data_quality_report,
+    handle_missing_values,
     prepare_train_test_data,
+    remove_duplicates,
 )
-
+from hello_poetry.data_utils import load_csv
 
 st.set_page_config(
     page_title="Clean Data",

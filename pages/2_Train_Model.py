@@ -1,15 +1,14 @@
 
-import streamlit as st
 import pandas as pd
+import streamlit as st
 
-from hello_poetry.data_utils import load_csv
 from hello_poetry.cleaning_utils import (
     convert_numeric_column,
-    remove_duplicates,
     get_data_quality_report,
+    remove_duplicates,
 )
+from hello_poetry.data_utils import load_csv
 from hello_poetry.model_utils import train_model
-
 
 st.set_page_config(
     page_title="Train Model",
@@ -244,7 +243,7 @@ if st.button("🚀 Train Model", type="primary"):
     except ValueError as error:
         st.error(str(error))
 
-    except Exception as error:
+    except Exception as error:  # noqa: BLE001
         st.error(
             f"Training failed: {error}"
         )
