@@ -19,6 +19,7 @@ task = st.sidebar.radio(
         "Task 3 — Data Cleaning",
         "Task 4 — Train Model",
         "Task 6 — Classifier Lab",
+        "Task 7 — Semantic Search",
     ],
 )
 
@@ -326,3 +327,73 @@ elif task == "Task 6 — Classifier Lab":
             "Check that the CSV files exist and contain 'label' "
             "and 'prediction' columns."
         )
+
+elif task == "Task 7 — Semantic Search":
+    import numpy as np
+    from sentence_transformers import SentenceTransformer
+
+    from semantic_search import (
+        DATA_PATH,
+        EMBEDDINGS_PATH,
+        MODEL_NAME,
+    )
+
+    st.header("Task 7: Semantic Search")
+    st.write("Search customer comments by meaning, not only exact words.")
+
+    @st.cache_resource
+    def load_search_data():
+        df = pd.read_csv(DATA_PATH)
+        comments = df["comment"].fillna("").tolist()
+        model = SentenceTransformer(MODEL_NAME)
+
+        if EMBEDDINGS_PATH.exists():
+            embeddings = np.load(EMBEDDINGS_PATH)
+            if embeddings.shape != (len(comments), 384):
+                embeddings = model.encode(
+                    comments,
+                    normalize_embeddings=True,
+                )
+                np.save(EMBEDDINGS_PATH, embeddings)
+        else:
+            embeddings = model.encode(
+                comments,
+                normalize_embeddings=True,
+            )
+            np.save(EMBEDDINGS_PATH, embeddings)
+
+        return df, model, embeddings
+
+    from semantic_search import semantic_search
+
+    df, model, embeddings = load_search_data()
+
+    query = st.text_input("Enter your search query")
+    top_k = st.slider("Number of results", min_value=1, max_value=10, value=5)
+    min_score = st.slider(
+        "Minimum similarity",
+        min_value=0.0,
+        max_value=1.0,
+        value=0.30,
+        step=0.05,
+    )
+
+    if query.strip():
+        results = semantic_search(
+            query,
+            df,
+            embeddings,
+            model,
+            top_k=top_k,
+            min_score=min_score,
+        )
+
+        if results.empty:
+            st.info("No good match found.")
+        else:
+            results = results.rename(
+                columns={"similarity": "score"}
+            )
+            st.dataframe(results, use_container_width=True)
+    else:
+        st.caption("Enter a query to search the comments.")
