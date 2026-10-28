@@ -253,3 +253,23 @@ I selected an initial minimum similarity threshold of 0.30 after reviewing the s
 I also noticed that the threshold does not guarantee relevance. Some results still describe a related topic with a different meaning or sentiment.
 
 The next step is to verify the deployed application on Streamlit Cloud.
+
+## Bonus — Arabic and Multilingual Semantic Search
+
+I tested semantic search using 5 Arabic sentences and their English equivalents. I compared two embedding models:
+
+- **all-MiniLM-L6-v2:** English-focused model.
+- **paraphrase-multilingual-MiniLM-L12-v2:** Multilingual model.
+
+### Results
+
+| Model | Correct Matches | Accuracy |
+|---|---|---|
+| English model | 2/5 | 40% |
+| Multilingual model | 5/5 | 100% |
+
+### What I Learned
+
+The multilingual model performed much better at matching Arabic queries with English sentences, without translating them.
+
+This showed me that choosing the right embedding model is important for multilingual applications. However, testing only 5 sentences is not enough to guarantee the same performance on larger datasets or different Arabic dialects.
