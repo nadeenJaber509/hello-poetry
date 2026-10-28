@@ -145,6 +145,8 @@ pages = [
         title="Task 7 - Semantic Search",
     ),
 ]
+st.sidebar.caption("Navigation v2 — Custom task names")
+
 
 navigation = st.navigation(pages)
 navigation.run()
