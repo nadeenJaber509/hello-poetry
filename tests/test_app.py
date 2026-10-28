@@ -9,7 +9,7 @@ def test_app_loads():
     at = AppTest.from_file(APP_PATH).run()
 
     assert not at.exception
-    assert at.title[0].value == "📊 Data Explorer"
+    assert at.title[0].value == "Data Explorer"
     assert len(at.file_uploader) == 1
 
 

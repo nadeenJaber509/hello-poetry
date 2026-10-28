@@ -9,12 +9,11 @@ from hello_poetry.llm import ask_llm, parse_label
 from hello_poetry.prompts import PROMPT_A, PROMPT_B, PROMPT_C
 
 st.set_page_config(
-    page_title="Classifier Lab",
-    page_icon="🧠",
+    page_title="LLM Classification Lab",
     layout="wide",
 )
 
-st.title("🧠 Classifier Lab")
+st.title("LLM Classification Lab")
 st.caption(
     "Classify customer comments using Groq and compare "
     "the performance of different prompts and models."
