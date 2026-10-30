@@ -1,0 +1,40 @@
+﻿question,expected_source,key_phrase,top_3_results
+Which command adds a package and installs it with its dependencies?,basic-usage.md,poetry add,"pyproject.md: opied to the appropriate installation directory for your operating system when your package is installed.
+
+* On Windows the file is placed in the `Scripts/` directory.
+* On *nix system the file is pla | cli.md: {{% warning %}}
+Especially on Windows, `self` commands that update or remove packages may be problematic
+so that other methods for installing plugins and updating Poetry are recommended.
+See [Using pl | cli.md: editable.
+* `--extras (-E)`: Extras to activate for the dependency. (multiple values allowed)
+* `--allow-prereleases`: Accept prereleases.
+* `--source`: Name of the source to use to install the packag"
+What does Poetry use to record the resolved dependency versions?,basic-usage.md,poetry.lock,"faq.md: is no way around it. However, if you notice that Poetry
+is downloading many versions of a single package, you can lessen the workload
+by constraining that one package in your pyproject.toml more narro | cli.md: ecause `poetry sync` will normally not work well in these cases.
+{{% /note %}}
+
+```bash
+poetry install
+```
+
+If there is a `poetry.lock` file in the current directory,
+it will use the exact versions fr | dependency-specification.md: e %}}
+Another use case for `tool.poetry.dependencies` are relative path dependencies
+since `project.dependencies` only support absolute paths.
+{{% /note %}}
+
+{{% note %}}
+Only main dependencies can be"
+Where can the project's Python version requirement be declared in the project metadata?,pyproject.md,requires-python,"faq.md: he supported Python range of your project with the upper bound of the failing dependency.
+Alternatively, you can tell Poetry to install this dependency [only for a specific range of Python versions]({ | basic-usage.md: o explicitly specify what versions of Python you intend to support, and its universal locking
+will guarantee that your project is installable (and all dependencies claim support for) all supported Pyt | faq.md: ble within the given Python version range in `pyproject.toml`.
+
+Assume you have the following `pyproject.toml`:
+
+```toml
+[tool.poetry.dependencies]
+python = ""^3.7""
+```
+
+This means your project aims to"

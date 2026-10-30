@@ -1,0 +1,105 @@
+﻿question,expected_source,key_phrase,top_3_results
+Which command creates a new Poetry project?,basic-usage.md,poetry new,"cli.md: ll dependencies to the latest available compatible versions, use `poetry update --lock`
+or `poetry lock --regenerate`, which normally produce the same result.
+This command is also available as a pre-c | configuration.md: # Configuration
+
+Poetry can be configured via the `config` command ([see more about its usage here]({{< relref ""cli#config"" >}} ""config command documentation""))
+or directly in the `config.toml` file t | cli.md: ugin, you can run:
+
+```bash
+poetry self add poetry-plugin-export
+```
+
+To update to the latest `poetry-core` version, you can run:
+
+```bash
+poetry self add poetry-core@latest
+```
+
+To add a keyring prov"
+Which command adds a package and installs it with its dependencies?,basic-usage.md,poetry add,"cli.md: s moved to a plugin: [`poetry-plugin-shell`](https://github.com/python-poetry/poetry-plugin-shell)
+
+## show
+
+To list all the available packages, you can use the `show` command.
+
+```bash
+poetry show
+`` | cli.md: dependency`.
+
+## install
+
+The `install` command reads the `pyproject.toml` file from the current project,
+resolves the dependencies, and installs them.
+
+{{% note %}}
+Normally, you should prefer `poetr | cli.md: ```bash
+poetry install --with test,docs
+```
+
+To install all dependency groups including the optional groups, use the ``--all-groups`` flag.
+
+```bash
+poetry install --all-groups
+```
+
+It's also possible"
+What does package-mode = false change about a Poetry project?,basic-usage.md,non-package mode,"repositories.md: ""pyproject"" >}}) file. This is **not** the same configuration used
+when publishing a package.
+
+{{% /note %}}
+
+{{% warning %}}
+
+Package sources are a Poetry-specific feature and **not** included in
+[co | configuration.md: iguration and can be subject to changes in upcoming releases until it is considered
+stable.
+{{% /warning %}}
+
+Configure [PEP 517 config settings](https://peps.python.org/pep-0517/#config-settings) to  | plugins.md: specify `plugins` is the same as for [dependencies]({{< relref ""managing-dependencies"" >}}).
+
+{{% warning %}}
+You can even overwrite a plugin in Poetry's own environment with another version.
+However,"
+Where can the project's Python version requirement be declared in the project metadata?,pyproject.md,requires-python,"faq.md: =3.11,<4.0.0
+```
+
+Usually you will want to match the supported Python range of your project with the upper bound of the failing dependency.
+Alternatively, you can tell Poetry to install this dependenc | pyproject.md: # The `pyproject.toml` file
+
+In package mode, the only required fields are `name` and `version`
+(either in the `project` section or in the `tool.poetry` section).
+Other fields are optional.
+In non-pac | pyproject.md: .
+
+```toml
+name = ""my-package""
+```
+
+### version
+
+{{% note %}}
+If you do not want to set the version dynamically via `poetry build --local-version`
+and you are not using a plugin, which sets the versio"
+How can an exclusive extra be used with environment markers when defining dependencies?,dependency-specification.md,exclusive extras; environment markers,"repositories.md: %}}
+
+Take into account that someone could publish a new package to a primary source
+which matches a package in your supplemental source. They could coincidentally
+or intentionally replace your depende | dependency-specification.md: define source dependencies in the `project` section.
+{{% /note %}}
+
+To depend on a package from an [alternate repository]({{< relref ""repositories#installing-from-private-package-sources"" >}}),
+you ca | dependency-specification.md: `tool.poetry` section.
+
+```toml
+[project]
+# ...
+dependencies = [
+    ""requests>=2.13.0"",
+]
+
+[tool.poetry.dependencies]
+requests = { source = ""private-source"" }
+```
+
+When both are specified, `project.d"

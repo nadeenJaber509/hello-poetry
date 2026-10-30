@@ -1,0 +1,71 @@
+﻿question,expected_source,key_phrase,top_3_results
+Which configuration setting controls whether virtual environments are created?,configuration.md,virtualenvs.create,"configuration.md: /note %}}
+
+### `virtualenvs.options.system-site-packages`
+
+**Type**: `boolean`
+
+**Default**: `false`
+
+**Environment Variable**: `POETRY_VIRTUALENVS_OPTIONS_SYSTEM_SITE_PACKAGES`
+
+Give the virtual envi | basic-usage.md: fication]({{< relref ""dependency-specification"" >}}) syntax, including caret,
+tilde, wildcard, inequality and
+[multiple constraints]({{< relref ""dependency-specification#multiple-constraints-dependenc | cli.md: dencies and list the chosen packages and versions.
+
+### debug tags
+
+The `debug tags` command is useful when you want to see the supported packaging tags for your project's active
+virtual environment. "
+Where can the project's Python version requirement be declared in the project metadata?,pyproject.md,requires-python,"faq.md: be compatible with any Python version >=3.7,<4.0. Whenever you try to add a dependency
+whose Python requirement doesn't match the whole range, Poetry will tell you this, e.g.:
+
+```
+The current project | faq.md: set an upper bound in the metadata when building your project,
+you can omit it in the `project` section and only set it in `tool.poetry.dependencies`:
+
+```toml
+[project]
+# ...
+requires-python = "">=3.7 | basic-usage.md: oject"" >}}) of the documentation.
+
+### Setting a Python Version
+
+{{% note %}}
+Unlike with other packages, Poetry will not automatically install a python interpreter for you.
+If you want to run Python "
+"Under what circumstances is a build script executed, and how are its dependencies made available?",building-extension-modules.md,poetry install; poetry build; temporary virtual environment,"building-extension-modules.md: rior to building distributions.
+3. When a PEP 517 build is triggered from source or sdist by another build frontend.
+
+### How does Poetry ensure my build script's dependencies are met?
+Prior to execut | pyproject.md: stall` to make them available in the project's virtualenv.
+{{% /note %}}
+
+```toml
+[tool.poetry.scripts]
+my_executable = { reference = ""some_binary.exe"", type = ""file"" }
+```
+
+This tells Poetry to inclu | building-extension-modules.md: successfully execute
+your build script. Common examples include `cython`, `meson`, `maturin`, `setuptools` etc., depending on how your
+extension is built.
+
+{{% note %}}
+You must assume that only Pytho"
+How can an exclusive extra be used with environment markers when defining dependencies?,dependency-specification.md,exclusive extras; environment markers,"dependency-specification.md: tab tabID=""multiple-constraints-poetry"" >}}
+```toml
+[tool.poetry.dependencies]
+foo = [
+    {version = ""<=1.9"", python = "">=3.6,<3.8""},
+    {version = ""^2.0"", python = "">=3.8""}
+]
+```
+{{< /tab >}}
+{{< / | repositories.md: %}}
+
+Take into account that someone could publish a new package to a primary source
+which matches a package in your supplemental source. They could coincidentally
+or intentionally replace your depende | cli.md: `: The group to add the dependency to.
+* `--dev (-D)`: Add package as development dependency. (shortcut for `-G dev`)
+* `--editable (-e)`: Add vcs/path dependencies as editable.
+* `--extras (-E)`: Ext"

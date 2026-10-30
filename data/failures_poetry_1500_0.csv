@@ -1,0 +1,118 @@
+﻿question,expected_source,key_phrase,top_3_results
+Which command creates a new Poetry project?,basic-usage.md,poetry new,"faq.md: he source code.
+
+This might look something like this:
+
+```text
+FROM python
+COPY pyproject.toml poetry.lock .
+RUN pip install poetry && poetry install --only main --no-root --no-directory
+COPY src/ ./s | cli.md: self add
+
+The `self add` command installs Poetry plugins and make them available at runtime. Additionally, it can
+also be used to upgrade Poetry's own dependencies or inject additional packages into t | configuration.md: # Configuration
+
+Poetry can be configured via the `config` command ([see more about its usage here]({{< relref ""cli#config"" >}} ""config command documentation""))
+or directly in the `config.toml` file t"
+Which command initializes Poetry in an existing project?,basic-usage.md,poetry init,"configuration.md: # Configuration
+
+Poetry can be configured via the `config` command ([see more about its usage here]({{< relref ""cli#config"" >}} ""config command documentation""))
+or directly in the `config.toml` file t | cli.md: self add
+
+The `self add` command installs Poetry plugins and make them available at runtime. Additionally, it can
+also be used to upgrade Poetry's own dependencies or inject additional packages into t | _index.md: thon\Scripts` on Windows.
+- `$POETRY_HOME/bin` if `$POETRY_HOME` is set.
+
+If this directory is not present in your `$PATH`, you can add it in order to invoke Poetry
+as `poetry`.
+
+Alternatively, the fu"
+Which command adds a package and installs it with its dependencies?,basic-usage.md,poetry add,"cli.md: ```
+
+Any extras not specified will be kept but not installed:
+
+```bash
+poetry install --extras ""A B""  # C is kept if already installed
+```
+
+If you want to remove unspecified extras, use the `sync` com | pyproject.md: opied to the appropriate installation directory for your operating system when your package is installed.
+
+* On Windows the file is placed in the `Scripts/` directory.
+* On *nix system the file is pla | cli.md: n these cases.
+{{% /note %}}
+
+```bash
+poetry install
+```
+
+If there is a `poetry.lock` file in the current directory,
+it will use the exact versions from there instead of resolving them.
+This ensures t"
+What does Poetry use to record the resolved dependency versions?,basic-usage.md,poetry.lock,"managing-dependencies.md: # Managing dependencies
+
+Poetry supports specifying main dependencies in the [`project.dependencies`]({{< relref ""pyproject#dependencies"" >}}) section of your `pyproject.toml`
+according to PEP 621. Fo | faq.md: # FAQ
+
+### Why is the dependency resolution process slow?
+
+While the dependency resolver at the heart of Poetry is highly optimized and
+should be fast enough for most cases, with certain sets of depen | faq.md: esting that your package is compatible
+with the new major version of your dependency.
+
+For example, instead of using `>=3.4` you can use `^3.4` which allows all versions `<4.0`.
+The `^` operator works"
+Which command checks the pyproject.toml file and its consistency with poetry.lock?,cli.md,poetry check,"basic-usage.md: egistered using the `repositories` key.
+If you have not registered any extra repositories, or it does not find a package with that name in the
+repositories you have specified, it falls back to PyPI.
+
+ | basic-usage.md: file to the project (which is good).
+
+Either way, running `install` when a `poetry.lock` file is present resolves and installs all dependencies that you listed in `pyproject.toml`,
+but Poetry uses the | cli.md: ifferent in that the packages managed are for Poetry's runtime environment.
+{{% /note %}}
+
+```bash
+poetry self install
+```
+
+#### Options
+
+* `--sync`: Synchronize the environment with the locked packag"
+Where can the project's Python version requirement be declared in the project metadata?,pyproject.md,requires-python,"pyproject.md: # The `pyproject.toml` file
+
+In package mode, the only required fields are `name` and `version`
+(either in the `project` section or in the `tool.poetry` section).
+Other fields are optional.
+In non-pac | faq.md: {{% /warning %}}
+
+### Why is Poetry telling me that the current project's supported Python range is not compatible with one or more packages' Python requirements?
+
+Unlike `pip`, Poetry doesn't resolve | cli.md: #### Options
+
+* `--interactive (-i)`: Allow interactive specification of project configuration.
+* `--name`: Set the resulting package name.
+* `--flat`: Use the flat layout for the project.
+* `--readme"
+What does the poetry-install pre-commit hook do?,pre-commit-hooks.md,calls the poetry install command,"pre-commit-hooks.md: # pre-commit hooks
+
+pre-commit is a framework for building and running
+[git hooks](https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks).
+See the official documentation for more information: [pre- | pre-commit-hooks.md: s://pre-commit.com/).
+
+A minimalistic `.pre-commit-config.yaml` example:
+
+```yaml
+repos:
+-   repo: https://github.com/python-poetry/poetry
+    rev: ''  # add version here
+    hooks:
+    -   id: poetry | basic-usage.md: file to the project (which is good).
+
+Either way, running `install` when a `poetry.lock` file is present resolves and installs all dependencies that you listed in `pyproject.toml`,
+but Poetry uses the"
+"Under what circumstances is a build script executed, and how are its dependencies made available?",building-extension-modules.md,poetry install; poetry build; temporary virtual environment,"building-extension-modules.md: in `build-system.requires` in order to
+avoid surprises if one of the packages introduce a breaking change. For example, you can set `cython` to
+`cython>=3.0.11,<4.0.0` to ensure no major version upgra | cli.md: latform`: Platforms for which the dependency must be installed.
+* `--markers`: Environment markers which describe when the dependency should be installed.
+* `--source`: Name of the source to use to in | building-extension-modules.md: ing the build script, Poetry creates a temporary virtual environment with your project's active Python
+version and then installs all dependencies specified under `build-system.requires` into this envi"

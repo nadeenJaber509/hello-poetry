@@ -1,0 +1,115 @@
+﻿question,expected_source,key_phrase,top_3_results
+What minimum Python version does Poetry require?,_index.md,Python 3.9+,"basic-usage.md: %}}
+
+Poetry will require you to explicitly specify what versions of Python you intend to support, and its universal locking
+will guarantee that your project is installable (and all dependencies claim  | contributing.md: * You can get the exact version by running `poetry --version`.
+* **What version of Python is being used to run Poetry?** Execute the `poetry debug info` to get this information.
+* **What's the name an | libraries.md: # Libraries
+
+This chapter will tell you how to make your library installable through Poetry.
+
+## Versioning
+
+Poetry requires [PEP 440](https://peps.python.org/pep-0440)-compliant versions for all proj"
+Which command initializes Poetry in an existing project?,basic-usage.md,poetry init,"managing-environments.md: running inside a virtual environment.
+If it is, it will use it directly without creating a new one. But if it's not, it will use
+one that it has already created or create a brand new one for you.
+
+By  | cli.md: be used to upgrade Poetry's own dependencies or inject additional packages into the runtime
+environment
+
+{{% note %}}
+The `self add` command works exactly like the [`add` command](#add). However, is d | building-extension-modules.md: wing scenarios.
+
+1. When `poetry install` is run, it is executed prior to installing the project's root package.
+2. When `poetry build` is run, it is executed prior to building distributions.
+3. When "
+Which command adds a package and installs it with its dependencies?,basic-usage.md,poetry add,"cli.md: latform`: Platforms for which the dependency must be installed.
+* `--markers`: Environment markers which describe when the dependency should be installed.
+* `--source`: Name of the source to use to in | cli.md: releases.
+* `--source`: Name of the source to use to install the package.
+* `--dry-run`: Output the operations but do not execute anything (implicitly enables `--verbose`).
+
+### self install
+
+The `sel | pyproject.md: ://www.python.org/dev/peps/pep-0508/#extras).
+
+For example, when installing the package using `pip`, the dependencies required by
+the `databases` extra can be installed as shown below.
+
+```bash
+pip in"
+What does Poetry use to record the resolved dependency versions?,basic-usage.md,poetry.lock,"cli.md: will use the exact versions from there instead of resolving them.
+This ensures that everyone using the library will get the same versions of the dependencies.
+
+If there is no `poetry.lock` file, Poetr | cli.md: there is a `poetry.lock` file in the current directory,
+it will use the exact versions from there instead of resolving them.
+This ensures that everyone using the library will get the same versions of  | managing-dependencies.md: l information that are only used by Poetry
+the [`tool.poetry.dependencies`]({{< relref ""pyproject#dependencies-and-dependency-groups"" >}}) sections can be used.
+
+See [Dependency specification]({{< rel"
+Which command builds the project distributions?,cli.md,poetry build,"cli.md: releases.
+* `--source`: Name of the source to use to install the package.
+* `--dry-run`: Output the operations but do not execute anything (implicitly enables `--verbose`).
+
+### self install
+
+The `sel | pyproject.md: project directory, in distribution builds. It will then be copied to the appropriate installation directory for your operating system when your package is installed.
+
+* On Windows the file is placed i | cli.md: a version constraint. Should be in format `foo:1.0.0`.
+* `--dev-dependency`: Development requirements, see `--dependency`.
+
+## publish
+
+This command publishes the package, previously built with the [`"
+Where can the project's Python version requirement be declared in the project metadata?,pyproject.md,requires-python,"basic-usage.md: ns.
+Again, it's important to remember that -- unlike other dependencies -- setting a Python version is merely specifying which versions of Python you intend to support.
+
+For example, in this `pyprojec | faq.md: Python classifiers in accordance with supported Python version.
+- The `python` dependency, in this example was replaced with `project.requires-python`. However, note that if you need an upper bound on | pyproject.md: over this setting.
+{{% /note %}}
+
+The version of the package. **Required in package mode if not defined in the project section**
+
+This should be a valid [PEP 440](https://peps.python.org/pep-0440/) st"
+What does the poetry-install pre-commit hook do?,pre-commit-hooks.md,calls the poetry install command,"pre-commit-hooks.md: poetry/poetry
+    rev: 1.8.3
+    hooks:
+    -   id: poetry-check
+    -   id: poetry-lock
+    -   id: poetry-export
+    -   id: poetry-install
+```
+
+Your `.pre-commit-config.yaml` repos will be checked  | pre-commit-hooks.md: .
+
+Poetry follows a branching strategy where the default branch is the active development branch,
+and fixes get backported to stable branches. New tags are assigned in these stable branches.
+
+`pre-com | pre-commit-hooks.md: is document provides a list of available pre-commit hooks provided by Poetry.
+
+{{% note %}}
+If you specify the `args:` for a hook in your `.pre-commit-config.yaml`,
+the defaults are overwritten. You m"
+"Under what circumstances is a build script executed, and how are its dependencies made available?",building-extension-modules.md,poetry install; poetry build; temporary virtual environment,"building-extension-modules.md: installs all dependencies specified under `build-system.requires` into this environment. It should be
+noted that no packages will be present in this environment at the time of creation.
+
+### Can I sto | building-extension-modules.md: s, in this context, refer to those Python packages that are required in order to successfully execute
+your build script. Common examples include `cython`, `meson`, `maturin`, `setuptools` etc., depend | building-extension-modules.md: or sdist by another build frontend.
+
+### How does Poetry ensure my build script's dependencies are met?
+Prior to executing the build script, Poetry creates a temporary virtual environment with your pr"
+How can an exclusive extra be used with environment markers when defining dependencies?,dependency-specification.md,exclusive extras; environment markers,"dependency-specification.md: }
+{{< /tabs >}}
+
+### `extra` environment marker
+
+Poetry populates the `extra` marker with each of the selected extras of the root package.
+For example, consider the following dependency:
+```toml
+[proj | dependency-specification.md: n mind that all combinations of possible extras available in your project need to be compatible with each other.
+This means that in order to use differing or incompatible versions across different com | repositories.md: %}}
+
+Take into account that someone could publish a new package to a primary source
+which matches a package in your supplemental source. They could coincidentally
+or intentionally replace your depende"

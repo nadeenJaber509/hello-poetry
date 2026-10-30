@@ -1,3 +1,4 @@
+
 import os
 
 import pandas as pd
@@ -8,8 +9,8 @@ from task6.prompts import PROMPT_A, PROMPT_B, PROMPT_C
 
 st.set_page_config(page_title="Progineer Training", page_icon="", layout="wide")
 
-st.title("Progineer Training — Tasks 1 to 6")
-st.write("A combined Streamlit project with data exploration, cleaning, model training, and LLM classification.")
+st.title("Progineer Training — Tasks 1 to 8")
+st.write("A combined Streamlit project with data exploration, cleaning, model training, LLM classification, and search.")
 
 task = st.sidebar.radio(
     "Choose a task",
@@ -20,6 +21,7 @@ task = st.sidebar.radio(
         "Task 4 — Train Model",
         "Task 6 — Classifier Lab",
         "Task 7 — Semantic Search",
+        "Task 8 — Docs Search",
     ],
 )
 
@@ -397,3 +399,81 @@ elif task == "Task 7 — Semantic Search":
             st.dataframe(results, use_container_width=True)
     else:
         st.caption("Enter a query to search the comments.")
+
+# --------------------------------------------------
+# Task 8 — Docs Search
+# --------------------------------------------------
+elif task == "Task 8 — Docs Search":
+
+    from store import build_vector_store, hybrid_search
+
+    st.header("Task 8: Poetry Documentation Search")
+    st.write("Search Poetry documentation using semantic and keyword search.")
+
+    @st.cache_resource
+    def load_docs_search():
+        collection, model = build_vector_store(
+            chunk_size=1500,
+            overlap=300,
+        )
+        return collection, model
+
+    with st.spinner("Loading Poetry documentation..."):
+        collection, model = load_docs_search()
+
+    st.success("Poetry documentation is ready!")
+
+    query = st.text_input(
+        "Enter your question about Poetry",
+        placeholder="Example: Which command creates a new Poetry project?",
+        key="docs_search_query",
+    )
+
+    top_k = st.slider(
+        "Number of results",
+        min_value=1,
+        max_value=10,
+        value=5,
+        key="docs_top_k",
+    )
+
+    if st.button("Search Documentation", type="primary"):
+
+        if not query.strip():
+            st.warning("Please enter a question first.")
+
+        else:
+            with st.spinner("Searching Poetry documentation..."):
+                results = hybrid_search(
+                    query=query,
+                    collection=collection,
+                    model=model,
+                    top_k=top_k,
+                )
+
+            st.subheader("Search Results")
+
+            if not results:
+                st.info("No matching documentation was found.")
+
+            else:
+                for index, result in enumerate(results, start=1):
+
+                    title = result.get("title", "Untitled")
+                    source = result.get("source", "Unknown")
+                    score = result.get("rrf_score", 0)
+
+                    with st.expander(
+                        f"Result {index}: {title} — {source}",
+                        expanded=(index == 1),
+                    ):
+                        st.write("**Source:**", source)
+                        st.write("**Title:**", title)
+                        st.write(
+                            "**Hybrid Search Score:**",
+                            round(float(score), 6),
+                        )
+
+                        st.divider()
+
+                        st.write(result["text"])

@@ -1,0 +1,100 @@
+﻿question,expected_source,key_phrase,top_3_results
+What minimum Python version does Poetry require?,_index.md,Python 3.9+,"basic-usage.md: %}}
+
+Poetry will require you to explicitly specify what versions of Python you intend to support, and its universal locking
+will guarantee that your project is installable (and all dependencies claim  | basic-usage.md: s-python = "">=3.9""
+```
+
+we are allowing any version of Python 3 that is greater or equal than `3.9.0`.
+
+When you run `poetry install`, you must have access to some version of a Python interpreter that | basic-usage.md: like with other packages, Poetry will not automatically install a python interpreter for you.
+If you want to run Python files in your package like a script or application, you must _bring your own_ py"
+Which command adds a package and installs it with its dependencies?,basic-usage.md,poetry add,"basic-usage.md: e to each other, and on the different ways you can specify
+dependencies.
+
+{{% note %}}
+**How does Poetry download the right files?**
+
+When you specify a dependency in `pyproject.toml`, Poetry first ta | cli.md: dependency`.
+
+## install
+
+The `install` command reads the `pyproject.toml` file from the current project,
+resolves the dependencies, and installs them.
+
+{{% note %}}
+Normally, you should prefer `poetr | cli.md: :
+
+```bash
+poetry install --extras ""A B""  # C is kept if already installed
+```
+
+If you want to remove unspecified extras, use the `sync` command.
+
+By default `poetry` will install your project's packa"
+Which configuration setting controls whether virtual environments are created?,configuration.md,virtualenvs.create,"configuration.md: OETRY_VIRTUALENVS_PATH`
+
+Directory where virtual environments will be created.
+
+{{% note %}}
+This setting controls the global virtual environment storage path. It most likely will not be useful at the | basic-usage.md: y configuration.
+Additionally, you can use the
+[`virtualenvs.in-project`]({{< relref ""configuration#virtualenvsin-project"" >}}) configuration variable to create
+virtual environments within your projec | basic-usage.md: ing the virtual environment]({{< relref ""managing-environments#activating-the-environment"" >}}).
+
+## Version constraints
+
+In our example, we are requesting the `pendulum` package with the version cons"
+Which command uploads a package to a package repository?,cli.md,poetry publish,"cli.md: a version constraint. Should be in format `foo:1.0.0`.
+* `--dev-dependency`: Development requirements, see `--dependency`.
+
+## publish
+
+This command publishes the package, previously built with the [` | cli.md: ority to access the repository.
+* `--client-cert`: Client certificate to access the repository.
+* `--dist-dir`: Dist directory where built artifacts are stored. Default is `dist`.
+* `--build`: Build t | basic-usage.md: e to each other, and on the different ways you can specify
+dependencies.
+
+{{% note %}}
+**How does Poetry download the right files?**
+
+When you specify a dependency in `pyproject.toml`, Poetry first ta"
+Where can the project's Python version requirement be declared in the project metadata?,pyproject.md,requires-python,"basic-usage.md: ns.
+Again, it's important to remember that -- unlike other dependencies -- setting a Python version is merely specifying which versions of Python you intend to support.
+
+For example, in this `pyprojec | faq.md: [tool.poetry.dependencies]
+python = ""^3.7""
+```
+
+This means your project aims to be compatible with any Python version >=3.7,<4.0. Whenever you try to add a dependency
+whose Python requirement doesn't  | faq.md: you this, e.g.:
+
+```
+The current project's supported Python range (>=3.7.0,<4.0.0) is not compatible with some of the required packages Python requirement:
+    - scipy requires Python >=3.7,<3.11, so "
+"Under what circumstances is a build script executed, and how are its dependencies made available?",building-extension-modules.md,poetry install; poetry build; temporary virtual environment,"building-extension-modules.md: installs all dependencies specified under `build-system.requires` into this environment. It should be
+noted that no packages will be present in this environment at the time of creation.
+
+### Can I sto | building-extension-modules.md: or sdist by another build frontend.
+
+### How does Poetry ensure my build script's dependencies are met?
+Prior to executing the build script, Poetry creates a temporary virtual environment with your pr | building-extension-modules.md: major version upgrades are used.
+{{% /note %}}
+
+{{% note %}}
+If you wish to develop the build script within your project's virtual environment, then you must also add the
+dependencies to your project "
+How can an exclusive extra be used with environment markers when defining dependencies?,dependency-specification.md,exclusive extras; environment markers,"dependency-specification.md: }
+{{< /tabs >}}
+
+### `extra` environment marker
+
+Poetry populates the `extra` marker with each of the selected extras of the root package.
+For example, consider the following dependency:
+```toml
+[proj | dependency-specification.md: n mind that all combinations of possible extras available in your project need to be compatible with each other.
+This means that in order to use differing or incompatible versions across different com | dependency-specification.md: dependencies with source repositories
+
+Direct origin (`git`/ `url`/ `path`) dependencies can satisfy the requirement of a dependency that
+doesn't explicitly specify a source, even when mutually exclus"

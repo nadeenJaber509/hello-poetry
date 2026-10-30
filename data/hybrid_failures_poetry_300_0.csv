@@ -1,0 +1,126 @@
+﻿question,expected_source,key_phrase,top_3_results
+What minimum Python version does Poetry require?,_index.md,Python 3.9+,"basic-usage.md: s-python = "">=3.9""
+```
+
+we are allowing any version of Python 3 that is greater or equal than `3.9.0`.
+
+When you run `poetry install`, you must have access to some version of a Python interpreter that | basic-usage.md: files in your package like a script or application, you must _bring your own_ python interpreter to run them.
+{{% /note %}}
+
+Poetry will require you to explicitly specify what versions of Python you i | cli.md: version from the Python Standalone Builds project.
+
+```bash
+poetry python install <PYTHON_VERSION>
+```
+
+#### Options
+
+* `--clean`: Clean up installation if check fails.
+* `--free-threaded`: Use free-t"
+Which command adds a package and installs it with its dependencies?,basic-usage.md,poetry add,"basic-usage.md: e to each other, and on the different ways you can specify
+dependencies.
+
+{{% note %}}
+**How does Poetry download the right files?**
+
+When you specify a dependency in `pyproject.toml`, Poetry first ta | cli.md: dependency`.
+
+## install
+
+The `install` command reads the `pyproject.toml` file from the current project,
+resolves the dependencies, and installs them.
+
+{{% note %}}
+Normally, you should prefer `poetr | cli.md: latform`: Platforms for which the dependency must be installed.
+* `--markers`: Environment markers which describe when the dependency should be installed.
+* `--source`: Name of the source to use to in"
+Which configuration setting controls whether virtual environments are created?,configuration.md,virtualenvs.create,"configuration.md: OETRY_VIRTUALENVS_PATH`
+
+Directory where virtual environments will be created.
+
+{{% note %}}
+This setting controls the global virtual environment storage path. It most likely will not be useful at the | basic-usage.md: t"" >}}) configuration variable to create
+virtual environments within your project directory.
+
+There are several ways to run commands within this virtual environment.
+
+{{% note %}}
+**External virtual e | configuration.md: name to the `config` command
+
+```bash
+poetry config virtualenvs.path
+```
+
+For a full list of the supported settings see [Available settings](#available-settings).
+
+## Adding or updating a configuratio"
+Which command uploads a package to a package repository?,cli.md,poetry publish,"cli.md: e publishable repositories.
+{{% /note %}}
+
+#### Options
+
+* `--repository (-r)`: The repository to register the package to (default: `pypi`).
+Should match a repository name set by the [`config`](#confi | cli.md: a version constraint. Should be in format `foo:1.0.0`.
+* `--dev-dependency`: Development requirements, see `--dependency`.
+
+## publish
+
+This command publishes the package, previously built with the [` | cli.md: un`: Perform all actions except upload the package.
+* `--skip-existing`: Ignore errors from files already existing in the repository.
+
+{{% note %}}
+See [Configuring Credentials]({{< relref ""repositori"
+Where can the project's Python version requirement be declared in the project metadata?,pyproject.md,requires-python,"basic-usage.md: dependencies claim support for) all supported Python versions.
+Again, it's important to remember that -- unlike other dependencies -- setting a Python version is merely specifying which versions of Py | faq.md: requirement doesn't match the whole range, Poetry will tell you this, e.g.:
+
+```
+The current project's supported Python range (>=3.7.0,<4.0.0) is not compatible with some of the required packages Pyth | faq.md: raints-dependencies"" >}}),
+if you know that it's not needed in all versions.
+
+If you do not want to set an upper bound in the metadata when building your project,
+you can omit it in the `project` sect"
+Which build tools are listed as examples for building extension modules?,building-extension-modules.md,"Cython, Meson, Maturin, setuptools","faq.md: Software Development :: Build Tools"",
+    ""Topic :: Software Development :: Libraries :: Python Modules"",
+]
+
+[tool.poetry.dependencies]
+httpx = ""^0.28.1""
+
+[tool.poetry.group.dev.dependencies]
+pre-comm | building-extension-modules.md: # Building Extension Modules
+
+{{% warning %}}
+While this feature has been around since almost the beginning of the Poetry project and has needed minimal changes,
+it is still considered unstable. You c | pyproject.md: f PyPI [trove classifiers](https://pypi.org/classifiers/) that describe the project.
+
+```toml
+classifiers = [
+    ""Topic :: Software Development :: Build Tools"",
+    ""Topic :: Software Development :: "
+"Under what circumstances is a build script executed, and how are its dependencies made available?",building-extension-modules.md,poetry install; poetry build; temporary virtual environment,"building-extension-modules.md: uted prior to installing the project's root package.
+2. When `poetry build` is run, it is executed prior to building distributions.
+3. When a PEP 517 build is triggered from source or sdist by another | building-extension-modules.md: t level, the following steps are required.
+
+{{< steps >}}
+{{< step >}}
+**Add Build Dependencies**
+
+The build dependencies, in this context, refer to those Python packages that are required in order to | building-extension-modules.md: t's virtual environment, then you must also add the
+dependencies to your project explicitly to a dependency group - the name of which is not important.
+
+```sh
+poetry add --group=build setuptools cytho"
+How can an exclusive extra be used with environment markers when defining dependencies?,dependency-specification.md,exclusive extras; environment markers,"dependency-specification.md: rsion <= '3.4' or sys_platform == 'win32'"" }
+```
+{{< /tab >}}
+{{< /tabs >}}
+
+### `extra` environment marker
+
+Poetry populates the `extra` marker with each of the selected extras of the root package.
+F | dependency-specification.md: dependencies with source repositories
+
+Direct origin (`git`/ `url`/ `path`) dependencies can satisfy the requirement of a dependency that
+doesn't explicitly specify a source, even when mutually exclus | cli.md: latform`: Platforms for which the dependency must be installed.
+* `--markers`: Environment markers which describe when the dependency should be installed.
+* `--source`: Name of the source to use to in"

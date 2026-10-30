@@ -1,0 +1,122 @@
+﻿question,expected_source,key_phrase,top_3_results
+Which command creates a new Poetry project?,basic-usage.md,poetry new,"cli.md: bles Poetry source caches.
+* `--directory=DIRECTORY (-C)`: The working directory for the Poetry command (defaults to the current working directory). All command-line arguments will be resolved relativ | cli.md: the runtime
+environment
+
+{{% note %}}
+The `self add` command works exactly like the [`add` command](#add). However, is different in that the packages
+managed are for Poetry's runtime environment.
+
+The | cli.md: plugin is no longer installed by default with Poetry 2.0.
+
+See [Using plugins]({{< relref ""plugins#using-plugins"" >}}) for information on how to install a plugin.
+As described in [Project plugins]({{<"
+Which command initializes Poetry in an existing project?,basic-usage.md,poetry init,"cli.md: bles Poetry source caches.
+* `--directory=DIRECTORY (-C)`: The working directory for the Poetry command (defaults to the current working directory). All command-line arguments will be resolved relativ | cli.md: the runtime
+environment
+
+{{% note %}}
+The `self add` command works exactly like the [`add` command](#add). However, is different in that the packages
+managed are for Poetry's runtime environment.
+
+The | _index.md: environment, Poetry
+is likely to upgrade or uninstall its own dependencies (causing hard-to-debug and understand errors).
+{{% /note %}}
+
+{{< /tab >}}
+{{< /tabs >}}
+
+{{% warning %}}
+Poetry should alway"
+Which command adds a package and installs it with its dependencies?,basic-usage.md,poetry add,"cli.md: `: The group to add the dependency to.
+* `--dev (-D)`: Add package as development dependency. (shortcut for `-G dev`)
+* `--editable (-e)`: Add vcs/path dependencies as editable.
+* `--extras (-E)`: Ext | cli.md: or the dependency. (multiple values allowed)
+* `--allow-prereleases`: Accept prereleases.
+* `--source`: Name of the source to use to install the package.
+* `--dry-run`: Output the operations but do no | cli.md: s moved to a plugin: [`poetry-plugin-shell`](https://github.com/python-poetry/poetry-plugin-shell)
+
+## show
+
+To list all the available packages, you can use the `show` command.
+
+```bash
+poetry show
+``"
+What does Poetry use to record the resolved dependency versions?,basic-usage.md,poetry.lock,"faq.md: that one package in your pyproject.toml more narrowly. That way,
+Poetry does not have to sift through so many versions of it, which may speed up
+the locking process considerably in some cases.
+
+{{% no | faq.md: # FAQ
+
+### Why is the dependency resolution process slow?
+
+While the dependency resolver at the heart of Poetry is highly optimized and
+should be fast enough for most cases, with certain sets of depen | managing-dependencies.md: # Managing dependencies
+
+Poetry supports specifying main dependencies in the [`project.dependencies`]({{< relref ""pyproject#dependencies"" >}}) section of your `pyproject.toml`
+according to PEP 621. Fo"
+Which command checks the pyproject.toml file and its consistency with poetry.lock?,cli.md,poetry check,"basic-usage.md: as a `pyproject.toml` file
+when you run `poetry install`, it means either you ran the `install` command before,
+or someone else on the project ran the `install` command and committed the `poetry.lock` | basic-usage.md: It can use whatever dependency version meets the constraints in your `pyproject.toml`. The application will probably use the latest compatible dependency version. If your library's `poetry.lock` falls | basic-usage.md: install
+```
+
+When you run this command, one of two things may happen:
+
+### Installing without `poetry.lock`
+
+If you have never run the command before and there is also no `poetry.lock` file present,
+P"
+Where can the project's Python version requirement be declared in the project metadata?,pyproject.md,requires-python,"faq.md: set an upper bound in the metadata when building your project,
+you can omit it in the `project` section and only set it in `tool.poetry.dependencies`:
+
+```toml
+[project]
+# ...
+requires-python = "">=3.7 | pyproject.md: # The `pyproject.toml` file
+
+In package mode, the only required fields are `name` and `version`
+(either in the `project` section or in the `tool.poetry` section).
+Other fields are optional.
+In non-pac | pyproject.md: 0](https://peps.python.org/pep-0440/) string.
+
+```toml
+version = ""0.1.0""
+```
+
+{{% note %}}
+
+If you would like to use semantic versioning for your project, please see
+[here]({{< relref ""libraries#versi"
+"Under what circumstances is a build script executed, and how are its dependencies made available?",building-extension-modules.md,poetry install; poetry build; temporary virtual environment,"building-extension-modules.md: rior to building distributions.
+3. When a PEP 517 build is triggered from source or sdist by another build frontend.
+
+### How does Poetry ensure my build script's dependencies are met?
+Prior to execut | pyproject.md: stall` to make them available in the project's virtualenv.
+{{% /note %}}
+
+```toml
+[tool.poetry.scripts]
+my_executable = { reference = ""some_binary.exe"", type = ""file"" }
+```
+
+This tells Poetry to inclu | building-extension-modules.md: hange. For example, you can set `cython` to
+`cython>=3.0.11,<4.0.0` to ensure no major version upgrades are used.
+{{% /note %}}
+
+{{% note %}}
+If you wish to develop the build script within your projec"
+How can an exclusive extra be used with environment markers when defining dependencies?,dependency-specification.md,exclusive extras; environment markers,"repositories.md: %}}
+
+Take into account that someone could publish a new package to a primary source
+which matches a package in your supplemental source. They could coincidentally
+or intentionally replace your depende | managing-dependencies.md: efault**, they are simply a way to organize
+the dependencies logically.
+{{% /note %}}
+
+{{% note %}}
+Dependency groups, other than the implicit `main` group, must only contain dependencies you need in  | dependency-specification.md: define source dependencies in the `project` section.
+{{% /note %}}
+
+To depend on a package from an [alternate repository]({{< relref ""repositories#installing-from-private-package-sources"" >}}),
+you ca"

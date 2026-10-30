@@ -1,0 +1,31 @@
+﻿question,expected_source,key_phrase,difficulty,answerable
+What minimum Python version does Poetry require?,_index.md,Python 3.9+,easy,yes
+Where is the official Poetry installer script hosted?,_index.md,install.python-poetry.org,easy,yes
+Which command creates a new Poetry project?,basic-usage.md,poetry new,easy,yes
+Which command initializes Poetry in an existing project?,basic-usage.md,poetry init,easy,yes
+Which command adds a package and installs it with its dependencies?,basic-usage.md,poetry add,easy,yes
+How can I run a Python script inside the project's Poetry environment?,basic-usage.md,poetry run python,easy,yes
+What does Poetry use to record the resolved dependency versions?,basic-usage.md,poetry.lock,easy,yes
+Which command displays information about the current virtual environment?,managing-environments.md,poetry env info,easy,yes
+Which command lists the virtual environments associated with a project?,managing-environments.md,poetry env list,easy,yes
+Which configuration setting controls whether virtual environments are created?,configuration.md,virtualenvs.create,easy,yes
+Which configuration setting places a virtual environment inside the project directory?,configuration.md,virtualenvs.in-project,easy,yes
+Which command checks the pyproject.toml file and its consistency with poetry.lock?,cli.md,poetry check,easy,yes
+Which command builds the project distributions?,cli.md,poetry build,easy,yes
+Which command uploads a package to a package repository?,cli.md,poetry publish,easy,yes
+Which package index does Poetry use by default for package discovery?,repositories.md,PyPI,easy,yes
+How can a dependency be added from a configured package source named foo?,repositories.md,poetry add --source foo,medium,yes
+Which command configures HTTP basic authentication for a repository named foo?,repositories.md,poetry config http-basic.foo,medium,yes
+What does package-mode = false change about a Poetry project?,basic-usage.md,non-package mode,medium,yes
+Where can the project's Python version requirement be declared in the project metadata?,pyproject.md,requires-python,medium,yes
+"What command installs all dependency groups, including optional groups?",cli.md,poetry install --all-groups,medium,yes
+Which command can synchronize the environment with the locked packages and selected dependency groups?,cli.md,poetry sync,medium,yes
+Which build tools are listed as examples for building extension modules?,building-extension-modules.md,"Cython, Meson, Maturin, setuptools",medium,yes
+What does the poetry-install pre-commit hook do?,pre-commit-hooks.md,calls the poetry install command,medium,yes
+How can a plugin be installed only for the current project when it is not in Poetry's own environment?,plugins.md,.poetry/plugins,hard,yes
+"Under what circumstances is a build script executed, and how are its dependencies made available?",building-extension-modules.md,poetry install; poetry build; temporary virtual environment,hard,yes
+How can an exclusive extra be used with environment markers when defining dependencies?,dependency-specification.md,exclusive extras; environment markers,hard,yes
+Does Poetry include a built-in graphical debugger for stepping through Python code?,,,unanswerable,no
+Can Poetry install and manage Ruby gem dependencies using a Gemfile?,,,unanswerable,no
+How can I enable Bash tab completion for Poetry?,_index.md,Bash; tab completion,medium,yes
+What is the purpose of optional dependency groups?,managing-dependencies.md,only required in a particular environment or for a specific purpose,medium,yes
