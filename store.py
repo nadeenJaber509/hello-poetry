@@ -16,34 +16,38 @@ COLLECTION_NAME = "poetry_1500_300"
 CHUNK_SIZE = 1500
 OVERLAP = 300
 
-
 def build_vector_store(
     folder="data/poetry_docs",
     chunk_size=CHUNK_SIZE,
     overlap=OVERLAP,
 ):
-    # Load and split documents.
+    collection_name = f"poetry_{chunk_size}_{overlap}"
+
+    client = chromadb.PersistentClient(path=DB_PATH)
+
+    collection = client.get_or_create_collection(
+        name=collection_name,
+        metadata={"hnsw:space": "cosine"},
+    )
+
+    # Load the model.
+    model = SentenceTransformer(MODEL_NAME)
+
+    # Reuse the collection if it already contains data.
+    if collection.count() > 0:
+        print("Existing collection found:", collection_name)
+        print("Chunks stored:", collection.count())
+
+        return collection, model
+
+    # Build the collection if it is empty.
+    print("Building collection:", collection_name)
+
     documents = load_documents(folder)
     chunks = chunk_documents(documents, chunk_size, overlap)
 
     print("Documents loaded:", len(documents))
     print("Chunks created:", len(chunks))
-
-    # Convert text into numerical embeddings.
-    model = SentenceTransformer(MODEL_NAME)
-
-    client = chromadb.PersistentClient(path=DB_PATH)
-
-    # Recreate the collection to avoid duplicate data on reruns.
-    try:
-        client.delete_collection(COLLECTION_NAME)
-    except Exception:
-        pass
-
-    collection = client.create_collection(
-        name=COLLECTION_NAME,
-        metadata={"hnsw:space": "cosine"},
-    )
 
     batch_size = 100
 
@@ -77,8 +81,6 @@ def build_vector_store(
     print("Database path:", Path(DB_PATH).resolve())
 
     return collection, model
-
-
 def search_documents(query, collection, model, top_k=5):
     # Convert the user's question into an embedding.
     query_embedding = model.encode([query]).tolist()[0]
@@ -155,7 +157,7 @@ def keyword_search(query, collection, top_k=5):
 
     return matches[:top_k]
 
-def hybrid_search(query, collection, model, top_k=5):
+def hybrid_search(query, collection, model, top_k=5, min_similarity=None):
     # Get more candidates from both search methods.
     candidate_count = max(top_k * 4, 20)
 
@@ -205,6 +207,14 @@ def hybrid_search(query, collection, model, top_k=5):
         key=lambda item: item["rrf_score"],
         reverse=True,
     )
+
+        # Apply the minimum semantic similarity threshold.
+    if min_similarity is not None:
+        ranked_results = [
+            result
+            for result in ranked_results
+            if result.get("similarity", 0) >= min_similarity
+        ]
 
     return ranked_results[:top_k]
 

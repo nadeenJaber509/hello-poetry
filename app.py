@@ -409,17 +409,37 @@ elif task == "Task 8 — Docs Search":
 
     st.header("Task 8: Poetry Documentation Search")
     st.write("Search Poetry documentation using semantic and keyword search.")
+    chunking_options = {
+    "Chunk size: 300 | Overlap: 0": (300, 0),
+    "Chunk size: 300 | Overlap: 60": (300, 60),
+    "Chunk size: 800 | Overlap: 0": (800, 0),
+    "Chunk size: 800 | Overlap: 150": (800, 150),
+    "Chunk size: 1500 | Overlap: 0": (1500, 0),
+    "Chunk size: 1500 | Overlap: 300": (1500, 300),
+}
 
+    selected_chunking = st.selectbox(
+        "Choose Chunking Configuration",
+        options=list(chunking_options.keys()),
+        index=5,
+    )
+
+    chunk_size, overlap = chunking_options[selected_chunking]
     @st.cache_resource
-    def load_docs_search():
+    def load_docs_search(chunk_size, overlap):
         collection, model = build_vector_store(
-            chunk_size=1500,
-            overlap=300,
+            chunk_size=chunk_size,
+            overlap=overlap,
         )
         return collection, model
 
-    with st.spinner("Loading Poetry documentation..."):
-        collection, model = load_docs_search()
+    with st.spinner(
+        f"Loading Poetry documentation ({chunk_size}/{overlap})..."
+    ):
+        collection, model = load_docs_search(
+            chunk_size,
+            overlap,
+        )
 
     st.success("Poetry documentation is ready!")
 
@@ -436,6 +456,14 @@ elif task == "Task 8 — Docs Search":
         value=5,
         key="docs_top_k",
     )
+    min_similarity = st.slider(
+    "Minimum Similarity",
+    min_value=0.0,
+    max_value=1.0,
+    value=0.30,
+    step=0.05,
+    key="docs_min_similarity",
+)
 
     if st.button("Search Documentation", type="primary"):
 
@@ -449,19 +477,21 @@ elif task == "Task 8 — Docs Search":
                     collection=collection,
                     model=model,
                     top_k=top_k,
+                    min_similarity=min_similarity,
+
                 )
 
             st.subheader("Search Results")
 
             if not results:
-                st.info("No matching documentation was found.")
+                    st.info("No good match found.")
 
             else:
                 for index, result in enumerate(results, start=1):
 
                     title = result.get("title", "Untitled")
                     source = result.get("source", "Unknown")
-                    score = result.get("rrf_score", 0)
+                    score = result.get("similarity", 0)
 
                     with st.expander(
                         f"Result {index}: {title} — {source}",
@@ -470,7 +500,7 @@ elif task == "Task 8 — Docs Search":
                         st.write("**Source:**", source)
                         st.write("**Title:**", title)
                         st.write(
-                            "**Hybrid Search Score:**",
+                            "**Similarity Score:**",
                             round(float(score), 6),
                         )
 
