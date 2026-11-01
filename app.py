@@ -405,7 +405,14 @@ elif task == "Task 7 — Semantic Search":
 # --------------------------------------------------
 elif task == "Task 8 — Docs Search":
 
-    from store import build_vector_store, hybrid_search
+    import store
+    import inspect
+
+    print("Store module path:", store.__file__)
+    print("Hybrid search signature:", inspect.signature(store.hybrid_search))
+
+    build_vector_store = store.build_vector_store
+    hybrid_search = store.hybrid_search
 
     st.header("Task 8: Poetry Documentation Search")
     st.write("Search Poetry documentation using semantic and keyword search.")
