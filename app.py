@@ -400,30 +400,25 @@ elif task == "Task 7 — Semantic Search":
     else:
         st.caption("Enter a query to search the comments.")
 
-# --------------------------------------------------
-# Task 8 — Docs Search
-# --------------------------------------------------
+
 elif task == "Task 8 — Docs Search":
 
-    import store
-    import inspect
-
-    print("Store module path:", store.__file__)
-    print("Hybrid search signature:", inspect.signature(store.hybrid_search))
-
-    build_vector_store = store.build_vector_store
-    hybrid_search = store.hybrid_search
+    from pathlib import Path
+    from store import build_vector_store, hybrid_search
 
     st.header("Task 8: Poetry Documentation Search")
-    st.write("Search Poetry documentation using semantic and keyword search.")
+    st.write(
+        "Search Poetry documentation using semantic and keyword search."
+    )
+
     chunking_options = {
-    "Chunk size: 300 | Overlap: 0": (300, 0),
-    "Chunk size: 300 | Overlap: 60": (300, 60),
-    "Chunk size: 800 | Overlap: 0": (800, 0),
-    "Chunk size: 800 | Overlap: 150": (800, 150),
-    "Chunk size: 1500 | Overlap: 0": (1500, 0),
-    "Chunk size: 1500 | Overlap: 300": (1500, 300),
-}
+        "Chunk size: 300 | Overlap: 0": (300, 0),
+        "Chunk size: 300 | Overlap: 60": (300, 60),
+        "Chunk size: 800 | Overlap: 0": (800, 0),
+        "Chunk size: 800 | Overlap: 150": (800, 150),
+        "Chunk size: 1500 | Overlap: 0": (1500, 0),
+        "Chunk size: 1500 | Overlap: 300": (1500, 300),
+    }
 
     selected_chunking = st.selectbox(
         "Choose Chunking Configuration",
@@ -432,23 +427,40 @@ elif task == "Task 8 — Docs Search":
     )
 
     chunk_size, overlap = chunking_options[selected_chunking]
+
     @st.cache_resource
     def load_docs_search(chunk_size, overlap):
+
         collection, model = build_vector_store(
+            folder=Path(__file__).resolve().parent
+            / "data"
+            / "poetry_docs",
             chunk_size=chunk_size,
             overlap=overlap,
         )
+
+        if collection.count() == 0:
+            raise RuntimeError(
+                "The Poetry documentation collection is empty."
+            )
+
         return collection, model
 
-    with st.spinner(
-        f"Loading Poetry documentation ({chunk_size}/{overlap})..."
-    ):
-        collection, model = load_docs_search(
-            chunk_size,
-            overlap,
-        )
+    try:
+        with st.spinner(
+            f"Loading Poetry documentation ({chunk_size}/{overlap})..."
+        ):
+            collection, model = load_docs_search(
+                chunk_size,
+                overlap,
+            )
 
-    st.success("Poetry documentation is ready!")
+        st.success("Poetry documentation is ready!")
+
+    except Exception as error:
+        st.error("Could not load the Poetry documentation.")
+        st.exception(error)
+        st.stop()
 
     query = st.text_input(
         "Enter your question about Poetry",
@@ -463,54 +475,80 @@ elif task == "Task 8 — Docs Search":
         value=5,
         key="docs_top_k",
     )
-    min_similarity = st.slider(
-    "Minimum Similarity",
-    min_value=0.0,
-    max_value=1.0,
-    value=0.30,
-    step=0.05,
-    key="docs_min_similarity",
-)
 
-    if st.button("Search Documentation", type="primary"):
+    min_similarity = st.slider(
+        "Minimum Similarity",
+        min_value=0.0,
+        max_value=1.0,
+        value=0.60,
+        step=0.05,
+        key="docs_min_similarity",
+    )
+
+    if st.button(
+        "Search Documentation",
+        type="primary",
+    ):
 
         if not query.strip():
             st.warning("Please enter a question first.")
 
         else:
-            with st.spinner("Searching Poetry documentation..."):
-                results = hybrid_search(
-                    query=query,
-                    collection=collection,
-                    model=model,
-                    top_k=top_k,
-                    min_similarity=min_similarity,
+            try:
+                with st.spinner(
+                    "Searching Poetry documentation..."
+                ):
+                    results = hybrid_search(
+                        query=query,
+                        collection=collection,
+                        model=model,
+                        top_k=top_k,
+                        min_similarity=min_similarity,
+                    )
 
-                )
+                st.subheader("Search Results")
 
-            st.subheader("Search Results")
-
-            if not results:
+                if not results:
                     st.info("No good match found.")
 
-            else:
-                for index, result in enumerate(results, start=1):
-
-                    title = result.get("title", "Untitled")
-                    source = result.get("source", "Unknown")
-                    score = result.get("similarity", 0)
-
-                    with st.expander(
-                        f"Result {index}: {title} — {source}",
-                        expanded=(index == 1),
+                else:
+                    for index, result in enumerate(
+                        results,
+                        start=1,
                     ):
-                        st.write("**Source:**", source)
-                        st.write("**Title:**", title)
-                        st.write(
-                            "**Similarity Score:**",
-                            round(float(score), 6),
+
+                        title = result.get(
+                            "title",
+                            "Untitled",
                         )
 
-                        st.divider()
+                        source = result.get(
+                            "source",
+                            "Unknown",
+                        )
 
-                        st.write(result["text"])
+                        score = result.get(
+                            "similarity",
+                            0,
+                        )
+
+                        with st.expander(
+                            f"Result {index}: {title} — {source}",
+                            expanded=(index == 1),
+                        ):
+
+                            st.write("**Source:**", source)
+                            st.write("**Title:**", title)
+
+                            st.write(
+                                "**Similarity Score:**",
+                                round(float(score), 6),
+                            )
+
+                            st.divider()
+
+                            st.write(result["text"])
+
+            except Exception as error:
+                st.error("Search failed.")
+                st.exception(error)
