@@ -1,9 +1,16 @@
-
 """Explore the Poetry documentation before preprocessing."""
 
+import sys
 from pathlib import Path
 
-DOCS_DIR = Path(__file__).resolve().parent / "data" / "poetry_docs"
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+DOCS_DIR = PROJECT_ROOT / "data" / "poetry_docs"
 
 
 def explore_documents(folder: Path) -> list[dict]:
@@ -31,9 +38,7 @@ def explore_documents(folder: Path) -> list[dict]:
 
 def main() -> None:
     if not DOCS_DIR.is_dir():
-        raise FileNotFoundError(
-            f"Documentation directory not found: {DOCS_DIR}"
-        )
+        raise FileNotFoundError(f"Documentation directory not found: {DOCS_DIR}")
 
     documents = explore_documents(DOCS_DIR)
 
@@ -50,9 +55,7 @@ def main() -> None:
             f"{document['lines']:>10}"
         )
 
-    total_characters = sum(
-        document["characters"] for document in documents
-    )
+    total_characters = sum(document["characters"] for document in documents)
 
     print(f"\nTotal files: {len(documents)}")
     print(f"Total characters: {total_characters:,}")

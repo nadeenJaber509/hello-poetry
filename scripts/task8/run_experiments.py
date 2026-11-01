@@ -1,6 +1,7 @@
 """Compare document chunking configurations using retrieval hit rates."""
 
 import csv
+import sys
 from pathlib import Path
 
 from sentence_transformers import SentenceTransformer
@@ -8,6 +9,11 @@ from sentence_transformers import SentenceTransformer
 from chunking import chunk_documents
 from documents import load_documents
 from store import build_collection, query_collection
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 DOCS_DIR = Path("data/poetry_docs")
 QUESTIONS_FILE = Path("data/questions.csv")
