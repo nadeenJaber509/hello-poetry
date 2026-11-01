@@ -144,6 +144,10 @@ pages = [
         "pages/4_Search.py",
         title="Task 7 - Semantic Search",
     ),
+    st.Page(
+    "pages/5_Docs_Search.py",
+    title="Task 8 - Docs Search",
+    ),
 ]
 
 

@@ -1,0 +1,11 @@
+id,question,expected_source,key_phrase
+Q01,How can I add a new dependency using Poetry?,cli.md,poetry add
+Q02,How can I display information about the installed Poetry version?,cli.md,poetry about
+Q03,How can I disable ANSI output in Poetry?,cli.md,--no-ansi
+Q04,How can I disable Poetry plugins when running a command?,cli.md,--no-plugins
+Q05,"How can I change the project root when running a Poetry command, and how are relative paths resolved?",cli.md,--project=PROJECT
+Q06,"Where can I specify dependency information needed for locking but not required for building a package?",dependency-specification.md,tool.poetry.dependencies
+Q07,How do I find help for a Poetry command?,cli.md,--help
+Q08,"How can I install a package into Poetry's own runtime environment instead of adding it to my project's dependencies?",cli.md,self add
+Q09,What is the current weather in Ramallah?,,
+Q10,What is today's Bitcoin price?,,
