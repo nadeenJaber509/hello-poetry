@@ -1,199 +1,114 @@
-## Task 8 — Documentation Source
+# Task 8 — Documents, Chunking, and a Vector Database
 
-- Repository: https://github.com/python-poetry/poetry
-- Version: 2.1.4
-- Source directory: `data/poetry_docs/`
-- License: `data/poetry_docs/LICENSE`
-- Source commit: a8f0889a54a545ec4f7ceed7bf41f8c2a7677bbb        refs/tags/2.1.4
+## Project overview
 
-## Step 2 — Documentation Exploration
+In this task, I built the retrieval part of a documentation search system using Poetry's Markdown documentation. The pipeline loads and cleans the documents, splits them into overlapping character-based chunks, generates embeddings with `all-MiniLM-L6-v2`, and stores them in a persistent ChromaDB collection. I then compared six chunking settings, reviewed retrieval failures, and added a Docs Search page to the existing Streamlit application.
 
-I created `explore_docs.py` to explore the Poetry 2.1.4 documentation before cleaning and chunking it.
+The system retrieves relevant passages; it does **not** use an LLM to generate answers.
 
-The script reads all Markdown files, counts their characters and lines, and sorts them from longest to shortest.
+## 1. Documentation source
 
-### Dataset Overview
+- **Repository:** https://github.com/python-poetry/poetry
+- **Version:** `2.1.4`
+- **Local documents:** `data/poetry_docs/`
+- **License copy:** `data/poetry_docs/LICENSE`
+- **Git tag reference recorded for `2.1.4`:** `a8f0889a54a545ec4f7ceed7bf41f8c2a7677bbb`
 
-- **Total Markdown files:** 16
-- **Total characters:** 224,878
-- **Longest file:** `cli.md` — 40,855 characters, 1,320 lines
-- **Second longest file:** `pyproject.md` — 25,048 characters, 931 lines
-- **Shortest file:** `community.md` — 654 characters, 30 lines
+The tag reference above was recorded during setup. It should not be described as the peeled source commit unless that has been verified separately.
 
-### File Statistics
+## 2. Exploring the documents
+
+I wrote `scripts/task8/explore_docs.py` to count Markdown files, characters, and lines before processing the content.
+
+**Dataset summary:** 16 Markdown files, containing **224,878 characters** in total. The longest file is `cli.md` (40,855 characters and 1,320 lines), followed by `pyproject.md` (25,048 characters and 931 lines). The shortest is `community.md` (654 characters and 30 lines).
 
 | File | Characters | Lines |
 |---|---:|---:|
-| cli.md | 40,855 | 1,320 |
-| pyproject.md | 25,048 | 931 |
-| dependency-specification.md | 23,224 | 784 |
-| repositories.md | 20,559 | 592 |
-| configuration.md | 18,740 | 611 |
-| faq.md | 16,606 | 436 |
-| _index.md | 13,289 | 412 |
-| basic-usage.md | 13,247 | 300 |
-| contributing.md | 12,970 | 272 |
-| building-extension-modules.md | 9,874 | 377 |
-| plugins.md | 8,335 | 293 |
-| pre-commit-hooks.md | 5,957 | 181 |
-| managing-dependencies.md | 5,924 | 186 |
-| managing-environments.md | 5,503 | 209 |
-| libraries.md | 4,093 | 135 |
-| community.md | 654 | 30 |
+| `cli.md` | 40,855 | 1,320 |
+| `pyproject.md` | 25,048 | 931 |
+| `dependency-specification.md` | 23,224 | 784 |
+| `repositories.md` | 20,559 | 592 |
+| `configuration.md` | 18,740 | 611 |
+| `faq.md` | 16,606 | 436 |
+| `_index.md` | 13,289 | 412 |
+| `basic-usage.md` | 13,247 | 300 |
+| `contributing.md` | 12,970 | 272 |
+| `building-extension-modules.md` | 9,874 | 377 |
+| `plugins.md` | 8,335 | 293 |
+| `pre-commit-hooks.md` | 5,957 | 181 |
+| `managing-dependencies.md` | 5,924 | 186 |
+| `managing-environments.md` | 5,503 | 209 |
+| `libraries.md` | 4,093 | 135 |
+| `community.md` | 654 | 30 |
 
-### Initial Observations
+I inspected the first 40 lines and code examples in `cli.md` and `pyproject.md`. Both contain YAML front matter, Markdown headings, and code examples; the documentation also uses links and special tags such as `{{% note %}}`.
 
-The documentation files have different lengths, so a single embedding for an entire document would not be suitable for precise retrieval.
+Three issues stood out:
 
-The first lines of `cli.md` contain a YAML front matter block:
+1. **Front matter:** Fields such as `title`, `draft`, and `menu` describe the documentation page rather than its main content.
+2. **Code examples:** Commands can lose context if a chunk boundary separates them from their explanations.
+3. **Document structure:** Large files, headings, links, and special tags can complicate fixed-length splitting and retrieval.
 
-```yaml
----
-title: "Commands"
-draft: false
-type: docs
-layout: single
+## 3. Loading and cleaning
 
-menu:
-  docs:
-    weight: 30
----
-```
+I implemented `load_documents()` in `documents.py`. It reads each `.md` file and returns `source`, `title`, and cleaned `text`. It extracts the title from the YAML header, removes that header from the searchable text, and reduces repeated blank lines while keeping the documentation content.
 
-This block contains document metadata rather than the main documentation content. During preprocessing, I should extract the title and remove the front matter from the searchable text while keeping the original source filename.
+I checked two examples after loading all **16 documents**:
 
-### Potential Retrieval Challenges
+| Source | Extracted title | Header removed |
+|---|---|---|
+| `cli.md` | `Commands` | Yes |
+| `pyproject.md` | `The pyproject.toml file` | Yes |
 
-1. **Long documents:** Files such as `cli.md` contain many sections, so they need to be divided into smaller chunks to retrieve specific information.
-2. **Front matter:** Metadata at the beginning of documents should be handled separately to avoid adding unnecessary text to embeddings.
-3. **Chunk boundaries:** Character-based chunking may split related explanations across different chunks, which could reduce retrieval quality.
+The original Markdown files were left unchanged; cleaning happens when the files are loaded.
 
-### Next Step
+## 4. Character-based chunking
 
-I will inspect the first 40 lines and selected code blocks from `cli.md` and `pyproject.md`, then implement `load_documents()` to extract document metadata and clean the text before chunking.
+I implemented `chunk_text()` and `chunk_documents()` in `chunking.py`. Chunks have a maximum character length, optional overlap, and a unique ID such as `cli.md::0`. Each record retains its source, title, and chunk index.
 
-### Step 2 — Document Inspection and Retrieval Challenges
+I first split `cli.md` with **chunk size 300** and **overlap 0**, then printed five consecutive chunks. The file produced **136 chunks**, and joining them reproduced the cleaned text exactly. Across all 16 files, this setting generated **752 chunks**.
 
-I inspected the two longest documentation files, `cli.md` and `pyproject.md`.
+Two boundary problems were visible:
 
-I noticed three things that could make semantic search harder:
+- The word `information` was split into `inf` and `ormation`.
+- The option `--no-ansi` was split into `--no-an` and `si`.
 
-1. **YAML front matter:** The files start with metadata such as title, layout, and menu settings. This information is not part of the main documentation content, so it should be extracted or removed before creating embeddings.
-2. **Code blocks:** The documentation includes commands such as `poetry add requests pendulum`. If chunking separates a command from its explanation, the retrieved text may not contain enough context.
-3. **Headings and special tags:** The files contain Markdown headings, links, and tags such as `{{% note %}}`. These structures can affect how text is split and what information appears in each chunk.
+These are limitations of splitting strictly by character count. Overlap may preserve some context, but it cannot guarantee a complete sentence or command in every chunk.
 
-The files also vary significantly in length, which shows why we need to explore the documents before choosing a chunking strategy.
+I also checked overlap behavior, empty text, the final remainder, invalid overlap values, unique IDs, and required metadata. All six manual checks passed. At chunk size 300, adding 60 characters of overlap increased the total from **752 to 934 chunks**.
 
-## Step 3 — Load and Clean Documents
+## 5. Persistent vector storage
 
-I created `documents.py` with a `load_documents()` function to read and clean the Markdown documentation.
+I built `store.py` around ChromaDB's persistent client. The application creates normalized embeddings with `all-MiniLM-L6-v2`, saves each chunk together with its text and metadata, and searches the collection using cosine similarity. Rebuilding a named collection replaces the old collection rather than duplicating its records.
 
-The function extracts the document title from YAML front matter, removes the header block, and cleans repeated blank lines while preserving the main content.
+For `poetry_300_60`, **934 chunks** were stored. A separate Python process reopened the collection and confirmed that all **934 records** remained available. The ChromaDB unit tests passed using a deterministic fake embedding model.
 
-I tested it on the Poetry documentation and successfully loaded all 16 files.
-
-For `cli.md`, the extracted title was "Commands", and for `pyproject.md`, it was "The pyproject.toml file". Both documents started with their actual content instead of the YAML header.
-
-This step helped me understand why document cleaning is important before chunking and generating embeddings.
-
-### Step 4 — Initial Chunking Inspection
-
-I tested fixed-size character chunking on `cli.md` using a chunk size of 300 characters and an overlap of 0.
-
-**Results:**
-- Total chunks for `cli.md`: 136
-- Total chunks across all 16 documents: 752
-- Maximum chunk length: 300 characters
-- All original text preserved: True
-
-I printed five consecutive chunks (indices 0–4) and observed two problematic splits:
-
-1. The word `information` was split into `inf` and `ormation` across chunks 0 and 1.
-2. The command-line option `--no-ansi` was split into `--no-an` and `si` across chunks 1 and 2.
-
-These examples show that fixed-size character chunking can break words and commands at arbitrary boundaries. This may make individual chunks less meaningful and reduce retrieval quality.
-
-Adding overlap may help preserve context across chunk boundaries, although it increases the total amount of stored text.
-
-### Step 4 — Chunking Validation
-
-I implemented `chunk_text()` and `chunk_documents()` using fixed-size character chunking with configurable overlap.
-
-All six manual validation checks passed:
-- Overlap between consecutive chunks is correct.
-- Empty text returns an empty list.
-- The final part of the text is preserved.
-- Invalid overlap raises a `ValueError`.
-- Chunk IDs are unique across the documentation.
-- Each chunk contains the required metadata.
-
-With a chunk size of 300 characters, the 16 documents produced 752 chunks without overlap and 934 chunks with 60 characters of overlap.
-
-The increase demonstrates the additional storage and embedding work introduced by overlap. Whether it improves retrieval accuracy will be evaluated in later experiments.
-
-I also observed that character-based chunking can split words and command-line options, such as `information` and `--no-ansi`, across chunk boundaries.
-
-## Step 5 — Persistent Vector Storage
-
-I implemented `store.py` using ChromaDB for persistent vector storage and similarity search.
-
-The system uses the pretrained `all-MiniLM-L6-v2` model to generate embeddings for the document chunks. Each stored record includes its chunk ID, text, source file, title, and chunk index.
-
-### Validation Results
-
-- **Collection:** `poetry_300_60`
-- **Stored chunks:** 934
-- **Persisted chunks after reopening ChromaDB:** 934
-- **ChromaDB unit tests:** 2 passed
-- **Full project test suite:** 51 passed
-- **Ruff lint and formatting checks:** Passed for the Step 5 files
-
-### Retrieval Test
-
-**Query:** How do I add a dependency using Poetry?
+I tested the query **“How do I add a dependency using Poetry?”** with the following results:
 
 | Rank | Source | Similarity |
-|---|---|---|
-| 1 | dependency-specification.md | 0.7294 |
-| 2 | cli.md | 0.7278 |
-| 3 | managing-dependencies.md | 0.7205 |
+|---:|---|---:|
+| 1 | `dependency-specification.md` | 0.7294 |
+| 2 | `cli.md` | 0.7278 |
+| 3 | `managing-dependencies.md` | 0.7205 |
 
-The retrieval pipeline worked, and results were ranked by similarity. However, the top three chunks did not directly show the expected `poetry add` command.
+The retrieved passages were related to dependencies, but these top three did not directly include the expected `poetry add` instruction. This was a useful reminder that a high similarity score does not guarantee that a passage answers the question.
 
-This demonstrates that semantic similarity does not necessarily mean the retrieved chunk contains the answer. Fixed-character chunking may also separate commands from their explanations.
+## 6. Evaluation questions
 
-I will keep this configuration as a baseline and evaluate other chunk sizes and overlaps in the upcoming experiments.
+I prepared `data/questions.csv` with **10 questions**: **8 answerable** and **2 intentionally outside the documentation's scope**. The fields are `id`, `question`, `expected_source`, and `key_phrase`.
 
-### Step 6 — Initial Dataset Validation
+The validation script confirmed that the eight answerable questions have existing source files containing their expected phrases. The two no-answer entries have empty reference fields. I revised Q05, Q06, and Q08 to make them more challenging by asking about project-root behavior, dependency information used for locking, and Poetry's own runtime dependencies.
 
-I created `data/questions.csv` with 10 evaluation questions.
+This validation checks file and phrase presence; it does **not** prove that every reference is the best answer. Manual ground-truth review remains important, especially for ambiguous questions.
 
-The validation script confirmed that eight answerable questions reference existing documentation files and contain key phrases found in those files. Two additional questions were marked as having no documented answer.
+The training guide calls for **30 shared questions** in the final evaluation. The experiments below are preliminary because the additional questions from the other trainees have not yet been incorporated.
 
-An initial CSV header formatting issue caused a `KeyError`, which was resolved by correcting the file structure.
+## 7. Comparing chunking configurations
 
-The next step is to manually verify that the key phrases represent correct answers, ensure that at least three questions are sufficiently challenging, and combine the questions with contributions from the other trainees to create the final 30-question evaluation dataset.
+Using the same documentation, embedding model, and eight answerable questions, I compared six settings. A hit counted only when a top-k result contained **both** the expected source filename and the expected key phrase (case-insensitive).
 
-### Step 6 — Question Difficulty
-
-I revised three evaluation questions to make them more challenging:
-
-- **Q05:** Project root configuration and relative path resolution.
-- **Q06:** Dependency metadata required for locking versus building.
-- **Q08:** Project dependencies versus Poetry's own runtime dependencies.
-
-These questions require understanding the documentation rather than simply matching command names.
-
-The evaluation dataset currently contains 10 questions, including 8 answerable questions and 2 no-answer questions. Source and key-phrase validation has passed for the initial dataset; the revised questions still require verification.
-
-## Step 7 — Chunking Experiments
-
-I evaluated six fixed-character chunking configurations using the same Poetry documentation, embedding model (`all-MiniLM-L6-v2`), and eight answerable evaluation questions.
-
-### Experimental Results
-
-| Chunk Size | Overlap | Chunks | Avg. Length | Hit@1 | Hit@3 | Hit@5 |
-|---|---|---:|---:|---:|---:|---:|
+| Chunk size | Overlap | Chunks | Average length | Hit@1 | Hit@3 | Hit@5 |
+|---:|---:|---:|---:|---:|---:|---:|
 | 300 | 0 | 752 | 296.58 | 12.5% | 37.5% | 37.5% |
 | 300 | 60 | 934 | 297.76 | 37.5% | 37.5% | 50.0% |
 | 800 | 0 | 286 | 779.83 | 37.5% | 37.5% | 37.5% |
@@ -201,56 +116,59 @@ I evaluated six fixed-character chunking configurations using the same Poetry do
 | 1500 | 0 | 156 | 1429.68 | 25.0% | 25.0% | 50.0% |
 | 1500 | 300 | 190 | 1448.58 | 25.0% | 37.5% | 37.5% |
 
-### Observations
+Three settings tied for the highest Hit@5 (**50%**): `300/60`, `800/150`, and `1500/0`. The best Hit@1 (**37.5%**) was shared by `300/60` and `800/0`.
 
-Three configurations achieved the highest preliminary Hit@5 of 50%: `300/60`, `800/150`, and `1500/0`.
+Overlap improved Hit@5 at sizes 300 and 800, but reduced it at size 1500. Larger chunks also required fewer stored vectors. Neither larger chunks nor more overlap was consistently better.
 
-The `300/60` configuration also achieved a Hit@1 of 37.5%, tying with `800/0` for the highest Hit@1.
+**Limitation:** With only eight answerable questions, one question changes the measured hit rate by **12.5 percentage points**. These differences are too small to support a confident final ranking. Summary and failure files are saved in `results/task8/`.
 
-Adding overlap improved Hit@5 for chunk sizes 300 and 800, but reduced Hit@5 for chunk size 1500.
+## 8. Reviewing failures and unanswered questions
 
-These results suggest that overlap does not guarantee better retrieval. Smaller chunks can provide more focused results but require more stored vectors, while larger chunks reduce the number of vectors but may include unrelated information.
+For the `300/60` setting, **four of eight** answerable questions failed at Hit@5. I inspected the saved top-ranked results and assigned preliminary failure categories:
 
-### Limitations
+| Question | Likely cause | What I observed |
+|---|---|---|
+| Q01 — Adding a dependency | Semantic mismatch | Results discussed dependencies and `self add` but did not retrieve the expected `poetry add` passage. |
+| Q02 — Poetry version | Ground-truth ambiguity | A result containing `poetry --version` could answer the wording of the question, even though the reference expected `poetry about`. |
+| Q05 — Project root | Semantic mismatch | Results focused on project paths and environments instead of `--project=PROJECT`. |
+| Q08 — Poetry runtime packages | Semantic mismatch | Results discussed plugins and package management rather than the expected `self add` passage. |
 
-Only eight answerable questions were available for this preliminary evaluation. Each question represents 12.5 percentage points, so the results are sensitive to individual questions.
+These are **likely explanations**, not verified root causes. In particular, the saved failure previews alone cannot prove whether a chunk boundary contributed to a miss.
 
-The experiment must be repeated after combining and verifying the full 30-question dataset.
+I then tested two questions with no answer in the Poetry documents:
 
-### Next Step
-
-Analyze retrieval failures to identify whether they are caused by chunk boundaries, noisy chunks, semantic mismatch, or ambiguous ground truth.
-
-### Step 8 — No-Answer Question Analysis
-
-I tested two questions outside the Poetry documentation using the `poetry_300_60` collection.
-
-| Question | Top-1 Similarity | Top-2 Similarity | Top-3 Similarity |
+| Question | Top-1 similarity | Top-2 similarity | Top-3 similarity |
 |---|---:|---:|---:|
 | What is the current weather in Ramallah? | 0.1809 | 0.1718 | 0.1659 |
 | What is today's Bitcoin price? | 0.1765 | 0.1228 | 0.1200 |
 
-ChromaDB returned results for both questions even though they were outside the documentation's scope.
+ChromaDB still returned nearest neighbors, even for unrelated questions. A **tentative similarity threshold of 0.30** would reject both examples. However, this is not yet a validated no-answer detector; it needs testing against more answerable and unanswered questions to understand false acceptances and false rejections.
 
-The highest similarity scores were relatively low compared with the earlier dependency-search example, which returned scores around 0.72.
+**Proposed improvement (not implemented):** Review and clarify ground-truth answers, then calibrate a similarity threshold on a larger verified question set. I would also consider heading-aware chunking as a separate future experiment, rather than changing the baseline mid-evaluation.
 
-This suggests that a minimum similarity threshold may help filter irrelevant results. A preliminary threshold of 0.30 would reject both unanswered questions in this test.
+## 9. Streamlit Docs Search
 
-However, the threshold is not fully validated. More answerable and unanswered questions are needed to measure false rejections and false acceptances.
+I added `pages/5_Docs_Search.py` to the existing app without changing the Task 7 search page. The interface supports choosing one of the six chunk configurations, setting Top-k from 1 to 10, adjusting a minimum similarity threshold, and viewing each retrieved passage with its title, source, chunk index, and similarity score.
 
-**Proposed improvement:** Calibrate a similarity threshold using a larger, verified evaluation dataset before using it as a reliable no-answer detection mechanism.
+The page reuses the existing embedding model and storage functions. It opens a saved ChromaDB collection when available and builds one from the documentation when needed.
 
-### Step 9 — Streamlit UI Testing
+**Local checks performed:**
 
-I tested the Docs Search interface locally using the `poetry_800_150` collection.
+- The page appeared in the application's navigation.
+- The `poetry_800_150` collection reported **348 stored chunks**.
+- The query **“What is the weather in Ramallah?”**, with Top-k 5 and threshold 0.30, displayed **“No good match found.”**
+- A subsequent positive-search check was reported as working, but the exact retrieved passages and scores were not recorded in these notes.
 
-**No-answer test:**
-- Query: What is the weather in Ramallah?
-- Top-k: 5
-- Minimum similarity: 0.30
-- Stored chunks: 348
-- Result: No good match found.
+An empty-query UI test and Streamlit Cloud deployment are **not yet documented as verified**.
 
-The interface successfully filtered irrelevant retrieval results using the selected similarity threshold.
+## 10. Tests, limitations, and next steps
 
-The positive retrieval test, empty-query validation, and cloud deployment still require verification.
+The latest reported full test run completed with **51 tests passed and one third-party deprecation warning**. Ruff checks for the Task 8 scripts and Docs Search files passed. The experiment scripts were moved into `scripts/task8/`; running them with `poetry run python -m scripts.task8.<module>` preserved their imports and behavior.
+
+Before final submission, I still need to:
+
+1. Collect and manually verify the remaining evaluation questions, then rerun the six configurations on the shared dataset.
+2. Record the empty-query test and deploy/test Docs Search on Streamlit Cloud, including automatic collection creation.
+3. Review the README and repository contents, run the final test suite, and push the verified changes.
+
+**Main takeaway:** Building the vector store was straightforward compared with evaluating retrieval quality. The most useful lesson was that relevant-looking passages, high similarity scores, and even a passing source/phrase check do not always mean the user received the right answer.
