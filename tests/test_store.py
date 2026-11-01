@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from store import build_collection, query_collection
+from hello_poetry.store import build_collection, query_collection
 
 
 class FakeModel:

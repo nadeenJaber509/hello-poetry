@@ -6,7 +6,7 @@ from pathlib import Path
 
 from sentence_transformers import SentenceTransformer
 
-from store import query_collection
+from hello_poetry.store import query_collection
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 

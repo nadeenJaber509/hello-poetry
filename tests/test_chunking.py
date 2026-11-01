@@ -1,9 +1,8 @@
-
 """Unit tests for document chunking."""
 
 import pytest
 
-from chunking import chunk_documents, chunk_text
+from hello_poetry.chunking import chunk_documents, chunk_text
 
 
 def test_chunk_text_with_overlap():
@@ -64,7 +63,8 @@ def test_chunk_documents_metadata_and_unique_ids():
 
     assert len(ids) == len(set(ids))
     assert all(
-        set(chunk) == {
+        set(chunk)
+        == {
             "id",
             "text",
             "source",

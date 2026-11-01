@@ -4,7 +4,7 @@ import csv
 import sys
 from pathlib import Path
 
-from documents import load_documents
+from hello_poetry.documents import load_documents
 
 QUESTIONS_PATH = Path("data/questions.csv")
 DOCS_PATH = Path("data/poetry_docs")

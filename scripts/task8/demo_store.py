@@ -5,9 +5,9 @@ from pathlib import Path
 
 from sentence_transformers import SentenceTransformer
 
-from chunking import chunk_documents
-from documents import load_documents
-from store import build_collection, query_collection
+from hello_poetry.chunking import chunk_documents
+from hello_poetry.documents import load_documents
+from hello_poetry.store import build_collection, query_collection
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 

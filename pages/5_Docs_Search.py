@@ -12,9 +12,9 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from chunking import chunk_documents
-from documents import load_documents
-from store import build_collection, query_collection
+from hello_poetry.chunking import chunk_documents
+from hello_poetry.documents import load_documents
+from hello_poetry.store import build_collection, query_collection
 
 DOCS_DIR = ROOT / "data" / "poetry_docs"
 DB_DIR = ROOT / "chroma_db"

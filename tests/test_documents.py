@@ -1,7 +1,6 @@
-
 """Unit tests for loading Markdown documents."""
 
-from documents import load_documents
+from hello_poetry.documents import load_documents
 
 
 def test_load_document_with_front_matter(tmp_path):
@@ -9,7 +8,7 @@ def test_load_document_with_front_matter(tmp_path):
 
     document.write_text(
         '---\ntitle: "Example Guide"\ndraft: false\n---\n'
-        '\n# Introduction\n\n\n\nHello world.\n',
+        "\n# Introduction\n\n\n\nHello world.\n",
         encoding="utf-8",
     )
 
