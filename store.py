@@ -1,6 +1,8 @@
 
 from pathlib import Path
 import re
+import math
+
 import chromadb
 from sentence_transformers import SentenceTransformer
 
@@ -16,6 +18,7 @@ COLLECTION_NAME = "poetry_1500_300"
 CHUNK_SIZE = 1500
 OVERLAP = 300
 
+
 def build_vector_store(
     folder="data/poetry_docs",
     chunk_size=CHUNK_SIZE,
@@ -30,17 +33,14 @@ def build_vector_store(
         metadata={"hnsw:space": "cosine"},
     )
 
-    # Load the model.
     model = SentenceTransformer(MODEL_NAME)
 
-    # Reuse the collection if it already contains data.
     if collection.count() > 0:
         print("Existing collection found:", collection_name)
         print("Chunks stored:", collection.count())
 
         return collection, model
 
-    # Build the collection if it is empty.
     print("Building collection:", collection_name)
 
     documents = load_documents(folder)
@@ -81,11 +81,11 @@ def build_vector_store(
     print("Database path:", Path(DB_PATH).resolve())
 
     return collection, model
+
+
 def search_documents(query, collection, model, top_k=5):
-    # Convert the user's question into an embedding.
     query_embedding = model.encode([query]).tolist()[0]
 
-    # Search for the closest stored chunks.
     results = collection.query(
         query_embeddings=[query_embedding],
         n_results=top_k,
@@ -107,23 +107,22 @@ def search_documents(query, collection, model, top_k=5):
 
     return matches
 
-def keyword_search(query, collection, top_k=5):
-    # Normalize the query.
-    query = query.casefold()
-    query = re.sub(r"[^\w\s]", " ", query).strip()
-    query_words = set(query.split())
 
-    # Remove common words that are not useful for searching.
+def keyword_search(query, collection, top_k=5):
+    normalized_query = query.casefold()
+    normalized_query = re.sub(r"[^\w\s]", " ", normalized_query).strip()
+
+    query_words = set(normalized_query.split())
+
     stop_words = {
         "what", "which", "where", "when", "how",
         "is", "are", "the", "a", "an", "and",
         "to", "of", "in", "on", "for", "with",
-        "does", "do", "can", "be"
+        "does", "do", "can", "be",
     }
 
     query_words -= stop_words
 
-    # Get all stored chunks.
     stored = collection.get(
         include=["documents", "metadatas"]
     )
@@ -138,8 +137,9 @@ def keyword_search(query, collection, top_k=5):
         matched_words = query_words.intersection(text_words)
 
         if matched_words:
-            # Give a bonus when the exact phrase appears.
-            phrase_bonus = 5 if query in normalized_text else 0
+            phrase_bonus = (
+                5 if normalized_query in normalized_text else 0
+            )
 
             score = len(matched_words) + phrase_bonus
 
@@ -157,8 +157,34 @@ def keyword_search(query, collection, top_k=5):
 
     return matches[:top_k]
 
-def hybrid_search(query, collection, model, top_k=5, min_similarity=None):
-    # Get more candidates from both search methods.
+
+def cosine_similarity(vector_a, vector_b):
+    dot_product = sum(
+        a * b for a, b in zip(vector_a, vector_b)
+    )
+
+    norm_a = math.sqrt(sum(a * a for a in vector_a))
+    norm_b = math.sqrt(sum(b * b for b in vector_b))
+
+    if norm_a == 0 or norm_b == 0:
+        return 0.0
+
+    return dot_product / (norm_a * norm_b)
+
+
+def hybrid_search(
+    query,
+    collection,
+    model,
+    top_k=5,
+    min_similarity=None,
+):
+    if min_similarity is not None:
+        if not 0 <= min_similarity <= 1:
+            raise ValueError(
+                "min_similarity must be between 0 and 1."
+            )
+
     candidate_count = max(top_k * 4, 20)
 
     semantic_results = search_documents(
@@ -174,22 +200,46 @@ def hybrid_search(query, collection, model, top_k=5, min_similarity=None):
         top_k=candidate_count,
     )
 
-    # Store the combined scores.
     combined_scores = {}
 
-    # Add scores from semantic search.
+    # Add semantic search results.
     for rank, result in enumerate(semantic_results, start=1):
         key = (result["source"], result["text"])
 
+        combined_scores[key] = {
+            **result,
+            "rrf_score": 1 / (60 + rank),
+        }
+
+    # Find keyword results that are not already in semantic results.
+    missing_similarity = []
+
+    for result in keyword_results:
+        key = (result["source"], result["text"])
+
         if key not in combined_scores:
-            combined_scores[key] = {
-                **result,
-                "rrf_score": 0,
-            }
+            missing_similarity.append(result)
 
-        combined_scores[key]["rrf_score"] += 1 / (60 + rank)
+    # Calculate semantic similarity for keyword-only results.
+    if missing_similarity:
+        query_embedding = model.encode([query]).tolist()[0]
 
-    # Add scores from keyword search.
+        texts = [
+            result["text"] for result in missing_similarity
+        ]
+
+        text_embeddings = model.encode(texts).tolist()
+
+        for result, embedding in zip(
+            missing_similarity,
+            text_embeddings,
+        ):
+            result["similarity"] = cosine_similarity(
+                query_embedding,
+                embedding,
+            )
+
+    # Add keyword search results and combine RRF scores.
     for rank, result in enumerate(keyword_results, start=1):
         key = (result["source"], result["text"])
 
@@ -201,6 +251,14 @@ def hybrid_search(query, collection, model, top_k=5, min_similarity=None):
 
         combined_scores[key]["rrf_score"] += 1 / (60 + rank)
 
+    # Apply the minimum semantic similarity threshold.
+    if min_similarity is not None:
+        combined_scores = {
+            key: result
+            for key, result in combined_scores.items()
+            if result["similarity"] >= min_similarity
+        }
+
     # Sort by the combined RRF score.
     ranked_results = sorted(
         combined_scores.values(),
@@ -208,15 +266,8 @@ def hybrid_search(query, collection, model, top_k=5, min_similarity=None):
         reverse=True,
     )
 
-        # Apply the minimum semantic similarity threshold.
-    if min_similarity is not None:
-        ranked_results = [
-            result
-            for result in ranked_results
-            if result.get("similarity", 0) >= min_similarity
-        ]
-
     return ranked_results[:top_k]
+
 
 if __name__ == "__main__":
     model = SentenceTransformer(MODEL_NAME)
@@ -242,16 +293,16 @@ if __name__ == "__main__":
         print("Text:", result["text"][:300])
 
     # Test semantic search.
-    results = search_documents(
+    semantic_results = search_documents(
         query=query,
         collection=collection,
         model=model,
-        top_k=3,
+        top_k=5,
     )
 
     print("\nSemantic Search:", query)
 
-    for index, result in enumerate(results, start=1):
+    for index, result in enumerate(semantic_results, start=1):
         print(f"\nResult {index}")
         print("Source:", result["source"])
         print("Title:", result["title"])
@@ -263,7 +314,8 @@ if __name__ == "__main__":
         query=query,
         collection=collection,
         model=model,
-        top_k=20,
+        top_k=5,
+        min_similarity=None,
     )
 
     print("\nHybrid Search:", query)
@@ -272,5 +324,6 @@ if __name__ == "__main__":
         print(f"\nResult {index}")
         print("Source:", result["source"])
         print("Title:", result["title"])
+        print("Similarity:", round(result["similarity"], 4))
         print("RRF Score:", round(result["rrf_score"], 4))
         print("Text:", result["text"][:300])
