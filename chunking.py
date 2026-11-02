@@ -1,4 +1,6 @@
 from documents import load_documents
+
+
 def chunk_text(text, chunk_size, overlap):
     if chunk_size <= 0:
         raise ValueError("chunk_size must be greater than 0")

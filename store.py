@@ -1,14 +1,13 @@
 
-from pathlib import Path
-import re
 import math
+import re
+from pathlib import Path
 
 import chromadb
 from sentence_transformers import SentenceTransformer
 
 from chunking import chunk_documents
 from documents import load_documents
-
 
 # --------------------------------------------------
 # Configuration
@@ -335,12 +334,10 @@ def hybrid_search(
     top_k=5,
     min_similarity=None,
 ):
-    if min_similarity is not None:
-
-        if not 0 <= min_similarity <= 1:
-            raise ValueError(
-                "min_similarity must be between 0 and 1."
-            )
+    if min_similarity is not None and not 0 <= min_similarity <= 1:
+        raise ValueError(
+            "min_similarity must be between 0 and 1."
+        )
 
     collection_count = collection.count()
 

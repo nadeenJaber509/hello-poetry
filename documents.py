@@ -1,6 +1,6 @@
 
-from pathlib import Path
 import re
+from pathlib import Path
 
 
 def load_documents(folder):

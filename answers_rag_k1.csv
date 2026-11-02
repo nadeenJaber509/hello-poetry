@@ -1,0 +1,174 @@
+﻿id,question,expected_source,key_phrase,difficulty,answerable,answer,retrieved_sources,retrieval_hit
+1,What minimum Python version does Poetry require?,_index.md,Python 3.9+,easy,yes,Poetry requires **Python 3.9 or newer**. [1],_index.md,yes
+2,Where is the official Poetry installer script hosted?,_index.md,install.python-poetry.org,easy,yes,"The official Poetry installer script is hosted at `https://install.python-poetry.org` and can be run with:
+
+```bash
+curl -sSL https://install.python-poetry.org | python3 -
+```
+
+[1]",_index.md,no
+3,Which command creates a new Poetry project?,basic-usage.md,poetry new,easy,yes,"The command to create a new Poetry project is:
+
+```bash
+poetry new my-package
+```
+
+[1]",cli.md,no
+4,Which command initializes Poetry in an existing project?,basic-usage.md,poetry init,easy,yes,"Use the `poetry init` command to initialize Poetry in an existing project.  
+```bash
+poetry init
+```  
+[1]",basic-usage.md,yes
+5,Which command adds a package and installs it with its dependencies?,basic-usage.md,poetry add,easy,yes,"Use the **add** command, which updates `pyproject.toml` and installs the package with all its dependencies:
+
+```bash
+poetry add <package-name>
+```",cli.md,no
+6,How can I run a Python script inside the project's Poetry environment?,basic-usage.md,poetry run python,easy,yes,"Run the script through Poetry’s virtual environment:
+
+```bash
+poetry run python your_script.py
+```
+
+or start an interactive shell inside the environment and run it normally:
+
+```bash
+poetry shell
+python your_script.py
+```
+
+Poetry will automatically use the isolated environment for the project. [1]",managing-environments.md,no
+7,What does Poetry use to record the resolved dependency versions?,basic-usage.md,poetry.lock,easy,yes,"Poetry records the exact, resolved versions of all dependencies in its lock file (`poetry.lock`). [1]",managing-dependencies.md,no
+8,Which command displays information about the current virtual environment?,managing-environments.md,poetry env info,easy,yes,The command is `poetry env info`. It displays information about the current virtual environment. [1],cli.md,no
+9,Which command lists the virtual environments associated with a project?,managing-environments.md,poetry env list,easy,yes,The command is `poetry env list`. It lists all virtual environments associated with the current project. [1],cli.md,no
+10,Which configuration setting controls whether virtual environments are created?,configuration.md,virtualenvs.create,easy,yes,"The setting that turns virtual‑environment creation on or off is **`virtualenvs.create`**.  
+You can disable it with:
+
+```bash
+poetry config virtualenvs.create false
+```
+
+[1]",configuration.md,no
+11,Which configuration setting places a virtual environment inside the project directory?,configuration.md,virtualenvs.in-project,easy,yes,"The setting is `virtualenvs.in-project`.  
+Set it to `true` (e.g., `poetry config virtualenvs.in-project true`) to create the virtual environment inside the project directory. [1]",basic-usage.md,no
+12,Which command checks the pyproject.toml file and its consistency with poetry.lock?,cli.md,poetry check,easy,yes,"The command is:
+
+```bash
+poetry check
+```
+
+It validates the `pyproject.toml` file and checks its consistency with `poetry.lock`【1】.",cli.md,yes
+13,Which command builds the project distributions?,cli.md,poetry build,easy,yes,"The command to build the project distributions is:
+
+```bash
+poetry build
+```
+
+[1]",cli.md,yes
+14,Which command uploads a package to a package repository?,cli.md,poetry publish,easy,yes,"The command that uploads a package to a repository is:
+
+```bash
+poetry publish
+```",cli.md,yes
+15,Which package index does Poetry use by default for package discovery?,repositories.md,PyPI,easy,yes,"Poetry searches the default package repository, which is **PyPI**. [1]",basic-usage.md,no
+16,How can a dependency be added from a configured package source named foo?,repositories.md,poetry add --source foo,medium,yes,"Add it by referencing the source in the dependency declaration or via the CLI:
+
+```toml
+[tool.poetry.dependencies]
+my-cool-package = { version = ""*"", source = ""foo"" }
+```
+
+or run:
+
+```sh
+poetry add my-cool-package --source foo
+```
+
+[1]",dependency-specification.md,no
+17,Which command configures HTTP basic authentication for a repository named foo?,repositories.md,poetry config http-basic.foo,medium,yes,"Use the `http-basic` config option:
+
+```bash
+poetry config http-basic.foo <username> <password>
+```
+
+[1]",repositories.md,yes
+18,What does package-mode = false change about a Poetry project?,basic-usage.md,non-package mode,medium,yes,"`package-mode = false` switches Poetry to **non‑package mode**.  
+In this mode:
+
+* The project’s `name` and `version` fields become optional.  
+* You can’t build a distribution or publish the project to an index.  
+* `poetry install` installs only the dependencies, not the project itself (equivalent to `poetry install --no-root`).  
+
+[1]",basic-usage.md,yes
+19,Where can the project's Python version requirement be declared in the project metadata?,pyproject.md,requires-python,medium,yes,"The Python version requirement can be declared in the **`[project]`** section of `pyproject.toml` using the `requires‑python` field.  
+You can also set it in `tool.poetry.dependencies` for locking purposes, but the metadata for the project itself goes in `[project]`.  
+
+```toml
+[project]
+requires-python = "">=3.7""   # metadata for the project
+```",faq.md,no
+20,"What command installs all dependency groups, including optional groups?",cli.md,poetry install --all-groups,medium,yes,"Use the `--all-groups` flag:
+
+```bash
+poetry install --all-groups
+```
+
+[1]",cli.md,yes
+21,Which command can synchronize the environment with the locked packages and selected dependency groups?,cli.md,poetry sync,medium,yes,"Use Poetry’s **sync** command with the group options you need, e.g.:
+
+```bash
+poetry sync --with docs          # sync only the docs group
+poetry sync --without dev        # sync all groups except dev
+poetry sync --only dev           # sync only the dev group
+```
+
+This synchronizes the environment with the locked packages and the selected dependency groups. [1]",managing-dependencies.md,no
+22,Which build tools are listed as examples for building extension modules?,building-extension-modules.md,"Cython, Meson, Maturin, setuptools",medium,yes,"The examples given are **cython, meson, maturin, and setuptools**【1】.",building-extension-modules.md,yes
+23,What does the poetry-install pre-commit hook do?,pre-commit-hooks.md,calls the poetry install command,medium,yes,The `poetry-install` pre‑commit hook runs `poetry install` so that all packages locked in `poetry.lock` are installed in the environment. It accepts the same arguments as the `poetry install` command. [1],pre-commit-hooks.md,no
+24,How can a plugin be installed only for the current project when it is not in Poetry's own environment?,plugins.md,.poetry/plugins,hard,yes,"Add the plugin to the project’s `pyproject.toml` under the `tool.poetry.requires-plugins` section.  
+When you run `poetry install`, Poetry will detect that the plugin isn’t present in its own environment and will install it only for that project, placing it in the project’s `.poetry/plugins` directory.
+
+```toml
+# pyproject.toml
+[tool.poetry.requires-plugins]
+my-application-plugin = "">1.0""
+```
+
+Then run:
+
+```bash
+poetry install
+```
+
+The plugin will be installed locally for the project only. [1]",plugins.md,yes
+25,"Under what circumstances is a build script executed, and how are its dependencies made available?",building-extension-modules.md,poetry install; poetry build; temporary virtual environment,hard,yes,"The build script runs automatically in three cases:  
+1. When you run `poetry install` – it is executed before the root package is installed.  
+2. When you run `poetry build` – it runs before the distribution is built.  
+3. When a PEP 517 build is triggered from source or an sdist by another build frontend.  
+
+Before the script runs, Poetry creates a temporary virtual environment that matches your project’s active Python version and installs all packages listed under `build-system.requires` into that environment, so the script has its dependencies available. [1]",building-extension-modules.md,yes
+26,How can an exclusive extra be used with environment markers when defining dependencies?,dependency-specification.md,exclusive extras; environment markers,hard,yes,"You can add an **exclusive extra** to a dependency and combine it with an environment marker by using the `extras` key inside the dependency table and a `markers` key for the condition.  
+Example:
+
+```toml
+[tool.poetry.dependencies]
+foo = { version = ""^1.0"", extras = [""bar""], markers = ""platform_system == 'Linux'"" }
+```
+
+Here `foo` is required only when the `bar` extra is selected **and** the platform is Linux. This syntax lets you restrict a dependency to a specific extra while still applying environment‑specific constraints. [1]",dependency-specification.md,no
+27,Does Poetry include a built-in graphical debugger for stepping through Python code?,,,unanswerable,no,No – Poetry is a dependency manager and does not ship a built‑in graphical debugger for stepping through Python code. [1],building-extension-modules.md,n/a
+28,Can Poetry install and manage Ruby gem dependencies using a Gemfile?,,,unanswerable,no,No – Poetry is a Python‑only dependency manager. It can only read the `pyproject.toml` (or `setup.cfg`) for Python packages; it does not understand a `Gemfile` or install Ruby gems. [1],basic-usage.md,n/a
+29,How can I enable Bash tab completion for Poetry?,_index.md,Bash; tab completion,medium,yes,"Run Poetry’s built‑in completion generator and add it to your shell:
+
+```bash
+poetry completion
+```
+
+This outputs a Bash completion script that you can source (e.g., add the command to your `~/.bashrc` or `~/.bash_profile`). Once sourced, Bash will provide tab completion for Poetry commands. [1]",_index.md,yes
+30,What is the purpose of optional dependency groups?,managing-dependencies.md,only required in a particular environment or for a specific purpose,medium,yes,"Optional dependency groups let you bundle dependencies that are only needed in specific environments or for particular tasks. They are not installed by default, but can be added on demand with:
+
+```bash
+poetry install --with <group>
+```
+
+[1]",managing-dependencies.md,no

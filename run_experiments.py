@@ -1,7 +1,7 @@
 
 import csv
-import statistics
 import re
+import statistics
 from pathlib import Path
 
 import chromadb
@@ -10,7 +10,6 @@ from sentence_transformers import SentenceTransformer
 from chunking import chunk_documents
 from documents import load_documents
 from store import DB_PATH, MODEL_NAME, hybrid_search
-
 
 DATA_PATH = Path("data")
 DOCS_PATH = DATA_PATH / "poetry_docs"
@@ -34,10 +33,15 @@ def load_questions():
 
 
 def build_collection(name, chunks, model, client):
-    try:
+    existing_collections = client.list_collections()
+
+    existing_names = {
+        item if isinstance(item, str) else item.name
+        for item in existing_collections
+    }
+
+    if name in existing_names:
         client.delete_collection(name)
-    except Exception:
-        pass
 
     collection = client.create_collection(
         name=name,

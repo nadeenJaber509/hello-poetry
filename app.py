@@ -3,13 +3,14 @@ import os
 
 import pandas as pd
 import streamlit as st
+from groq import APIError
 
 from task6.llm import ask_llm, parse_label
 from task6.prompts import PROMPT_A, PROMPT_B, PROMPT_C
 
 st.set_page_config(page_title="Progineer Training", page_icon="", layout="wide")
 
-st.title("Progineer Training — Tasks 1 to 8")
+st.title("Progineer Training — Tasks 1 to 9")
 st.write("A combined Streamlit project with data exploration, cleaning, model training, LLM classification, and search.")
 
 task = st.sidebar.radio(
@@ -22,6 +23,7 @@ task = st.sidebar.radio(
         "Task 6 — Classifier Lab",
         "Task 7 — Semantic Search",
         "Task 8 — Docs Search",
+        "Task 9 — Poetry Chat",
     ],
 )
 
@@ -404,6 +406,7 @@ elif task == "Task 7 — Semantic Search":
 elif task == "Task 8 — Docs Search":
 
     from pathlib import Path
+
     from store import build_vector_store, hybrid_search
 
     st.header("Task 8: Poetry Documentation Search")
@@ -457,7 +460,7 @@ elif task == "Task 8 — Docs Search":
 
         st.success("Poetry documentation is ready!")
 
-    except Exception as error:
+    except (OSError, ValueError, RuntimeError) as error:
         st.error("Could not load the Poetry documentation.")
         st.exception(error)
         st.stop()
@@ -549,6 +552,150 @@ elif task == "Task 8 — Docs Search":
 
                             st.write(result["text"])
 
-            except Exception as error:
+            except (OSError, ValueError, RuntimeError) as error:
                 st.error("Search failed.")
                 st.exception(error)
+
+elif task == "Task 9 — Poetry Chat":
+
+    from rag import answer_question
+    from store import build_vector_store
+
+    st.header("Task 9: Poetry Documentation Chat")
+    st.write(
+        "Ask questions about Poetry and get answers "
+        "based on the official documentation."
+    )
+
+    # Load the Groq API key from Streamlit secrets or local environment.
+    try:
+        secret_key = st.secrets.get("GROQ_API_KEY")
+    except (FileNotFoundError, KeyError):
+        secret_key = None
+
+    if secret_key:
+        os.environ["GROQ_API_KEY"] = secret_key
+
+    if not os.getenv("GROQ_API_KEY"):
+        st.error(
+            "Groq API key not found. Add GROQ_API_KEY to your "
+            ".env file or Streamlit secrets."
+        )
+        st.stop()
+
+    # Load the vector database only once.
+    @st.cache_resource
+    def load_rag_resources():
+        collection, embedding_model = build_vector_store()
+
+        if collection.count() == 0:
+            raise RuntimeError("The Poetry documentation is empty.")
+
+        return collection, embedding_model
+
+    try:
+        with st.spinner("Loading Poetry documentation..."):
+            collection, embedding_model = load_rag_resources()
+
+        st.success("Poetry documentation is ready!")
+
+    except (OSError, ValueError, RuntimeError) as error:
+        st.error("Could not load the Poetry documentation.")
+        st.exception(error)
+        st.stop()
+
+    # Initialize conversation history.
+    if "poetry_chat_history" not in st.session_state:
+        st.session_state.poetry_chat_history = []
+
+    # Chat settings.
+    k = st.slider(
+        "Number of retrieved sources",
+        min_value=1,
+        max_value=8,
+        value=5,
+        key="rag_chat_k",
+    )
+
+    if st.button("Clear conversation"):
+        st.session_state.poetry_chat_history = []
+        st.rerun()
+
+    st.divider()
+
+    # Display previous messages.
+    for message in st.session_state.poetry_chat_history:
+
+        with st.chat_message(message["role"]):
+            st.write(message["content"])
+
+            if message["role"] == "assistant" and message.get("sources"):
+                with st.expander("View retrieved sources"):
+                    for index, source in enumerate(
+                        message["sources"], start=1
+                    ):
+                        st.markdown(
+                            f"**[{index}] {source['title']}**"
+                        )
+                        st.caption(source["source"])
+                        st.write(source["text"])
+                        st.divider()
+
+    # Receive a new question.
+    question = st.chat_input(
+        "Ask a question about Poetry..."
+    )
+
+    if question:
+
+        st.session_state.poetry_chat_history.append({
+            "role": "user",
+            "content": question,
+        })
+
+        with st.chat_message("user"):
+            st.write(question)
+
+        with st.chat_message("assistant"):
+
+            try:
+                with st.spinner("Searching and generating an answer..."):
+
+                    result = answer_question(
+                        question=question,
+                        collection=collection,
+                        model=embedding_model,
+                        k=k,
+                    )
+
+                answer = result["answer"]
+                sources = result["sources"]
+
+                st.write(answer)
+
+                with st.expander("View retrieved sources"):
+                    if not sources:
+                        st.info("No sources were retrieved.")
+
+                    for index, source in enumerate(
+                        sources, start=1
+                    ):
+                        st.markdown(
+                            f"**[{index}] {source['title']}**"
+                        )
+                        st.caption(source["source"])
+                        st.write(source["text"])
+                        st.divider()
+
+                st.session_state.poetry_chat_history.append({
+                    "role": "assistant",
+                    "content": answer,
+                    "sources": sources,
+                })
+
+            except (APIError, ValueError) as error:
+                st.error(
+                    "Could not generate an answer. "
+                    "Please check your API key and connection."
+                )
+                st.caption(f"Error details: {error}")
