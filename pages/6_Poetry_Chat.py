@@ -1,5 +1,5 @@
 
-"""Streamlit chat interface for the Poetry RAG assistant."""
+"""Educational Streamlit chat interface for the Poetry RAG assistant."""
 
 from pathlib import Path
 
@@ -25,7 +25,7 @@ CHUNK_SIZE = 800
 CHUNK_OVERLAP = 150
 
 st.set_page_config(
-    page_title="Poetry RAG Assistant",
+    page_title="RAG Assistant | AI Learning Lab",
     page_icon="🤖",
     layout="wide",
 )
@@ -87,7 +87,7 @@ def ensure_rag_collection():
 # --------------------------------------------------
 
 def display_sources(sources):
-    """Display numbered sources and their similarity scores."""
+    """Display numbered sources and similarity scores."""
     with st.expander("View retrieved sources"):
         if not sources:
             st.info("No documentation sources were retrieved.")
@@ -110,13 +110,56 @@ def display_sources(sources):
 
 
 # --------------------------------------------------
-# Page header
+# Educational introduction
 # --------------------------------------------------
 
-st.title("🤖 Poetry RAG Assistant")
+st.caption("TASK 09 · LANGUAGE AI & RETRIEVAL")
+st.title("RAG Assistant")
+
+st.write(
+    "Ask questions about Poetry and explore how AI "
+    "generates answers using retrieved documentation."
+)
+
+with st.container(border=True):
+    st.markdown("#### What is RAG?")
+    st.write(
+        "Retrieval-Augmented Generation (RAG) combines "
+        "document search with a language model. "
+        "The system first retrieves relevant passages "
+        "from the documentation, then provides them "
+        "to the LLM to help generate an answer."
+    )
+
+col1, col2 = st.columns(2, gap="medium")
+
+with col1, st.container(border=True):
+    st.markdown("**Try it**")
+    st.write(
+        'Ask "How do I add a dependency using Poetry?" '
+        "and explore the generated answer and its sources."
+    )
+
+with col2, st.container(border=True):
+    st.markdown("**What to notice**")
+    st.write(
+        "Change the number of retrieved chunks (k), "
+        "inspect the sources, and check whether the "
+        "citations support the answer."
+    )
+
+st.divider()
+
+
+# --------------------------------------------------
+# Interactive Chatbot
+# --------------------------------------------------
+
+st.subheader("Interactive Chatbot")
 
 st.caption(
-    "Ask questions about Poetry using its documentation."
+    "Powered by Poetry 2.1.4 documentation, "
+    "ChromaDB, sentence embeddings, and an LLM."
 )
 
 
@@ -132,7 +175,10 @@ with st.sidebar:
         min_value=1,
         max_value=8,
         value=3,
-        help="Number of documentation chunks sent to the LLM.",
+        help=(
+            "The number of documentation chunks "
+            "provided to the language model."
+        ),
     )
 
     if st.button(
@@ -174,7 +220,6 @@ question = st.chat_input(
 )
 
 if question:
-    # Save and display the user message.
     st.session_state["rag_messages"].append({
         "role": "user",
         "content": question,
@@ -183,16 +228,15 @@ if question:
     with st.chat_message("user"):
         st.markdown(question)
 
-    # Generate and display the assistant response.
     with (
         st.chat_message("assistant"),
         st.spinner("Searching Poetry documentation..."),
     ):
         try:
-            # Make sure the collection exists before retrieval.
+            # Prepare collection if it does not exist.
             ensure_rag_collection()
 
-            # Run the RAG pipeline.
+            # Run the existing RAG pipeline.
             result = answer_question(
                 question=question,
                 collection_name=COLLECTION_NAME,
@@ -203,10 +247,8 @@ if question:
             sources = result["sources"]
 
             st.markdown(answer)
-
             display_sources(sources)
 
-            # Save the assistant response and its sources.
             st.session_state["rag_messages"].append({
                 "role": "assistant",
                 "content": answer,

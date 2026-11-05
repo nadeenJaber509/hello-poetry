@@ -1,4 +1,6 @@
 
+"""Educational Streamlit page for semantic search."""
+
 import streamlit as st
 from sentence_transformers import SentenceTransformer
 
@@ -10,34 +12,84 @@ from search import (
 )
 
 st.set_page_config(
-    page_title="Semantic Search",
+    page_title="Semantic Search | AI Learning Lab",
     page_icon="🔎",
     layout="wide",
 )
 
-st.title("Semantic Search")
-st.write("Search customer comments by meaning, not only keywords.")
 
+# --------------------------------------------------
+# Cached resources
+# --------------------------------------------------
 
 @st.cache_resource
 def load_model():
+    """Load the embedding model once."""
     return SentenceTransformer(MODEL_NAME)
 
 
 @st.cache_data
 def load_search_data():
-    df = load_comments()
-    return df
+    """Load the customer comments dataset."""
+    return load_comments()
 
 
 @st.cache_resource
 def load_cached_embeddings():
+    """Generate embeddings once and reuse them."""
     df = load_comments()
     comments = df["comment"].fillna("").tolist()
 
     model = load_model()
     return get_embeddings(comments, model)
 
+
+# --------------------------------------------------
+# Educational introduction
+# --------------------------------------------------
+
+st.caption("TASK 07 · LANGUAGE AI & RETRIEVAL")
+st.title("Semantic Search")
+
+st.write(
+    "Find customer comments based on meaning, "
+    "not just matching keywords."
+)
+
+with st.container(border=True):
+    st.markdown("#### What is Semantic Search?")
+    st.write(
+        "Semantic Search converts text into numerical "
+        "representations called embeddings. "
+        "It compares these embeddings to find comments "
+        "that are similar in meaning, even when they "
+        "use different words."
+    )
+
+col1, col2 = st.columns(2, gap="medium")
+
+with col1, st.container(border=True):
+    st.markdown("**Try it**")
+    st.write(
+        'Enter a query such as "money back problem" '
+        'and explore the matching customer comments.'
+    )
+
+with col2, st.container(border=True):
+    st.markdown("**What to notice**")
+    st.write(
+        "Compare similarity scores and try changing "
+        "Top-k or the minimum similarity score."
+    )
+
+st.divider()
+
+
+# --------------------------------------------------
+# Interactive search demo
+# --------------------------------------------------
+
+st.subheader("Interactive Demo")
 
 df = load_search_data()
 comments = df["comment"].fillna("").tolist()
@@ -95,7 +147,9 @@ if st.button("Search", type="primary"):
                     "ID": row["id"],
                     "Comment": result["comment"],
                     "Label": row["label"],
-                    "Similarity": round(result["score"], 4),
+                    "Similarity": round(
+                        result["score"], 4
+                    ),
                 })
 
             st.dataframe(

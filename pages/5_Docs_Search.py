@@ -1,4 +1,5 @@
-"""Streamlit interface for searching Poetry documentation."""
+
+"""Educational Streamlit page for Poetry document search."""
 
 import sys
 from pathlib import Path
@@ -48,14 +49,22 @@ def ensure_collection(name, chunk_size, overlap, model):
         pass
 
     if not DOCS_DIR.is_dir():
-        raise FileNotFoundError("Poetry documentation files were not found.")
+        raise FileNotFoundError(
+            "Poetry documentation files were not found."
+        )
 
     with st.spinner(f"Building collection: {name}..."):
         documents = load_documents(DOCS_DIR)
-        chunks = chunk_documents(documents, chunk_size, overlap)
+        chunks = chunk_documents(
+            documents,
+            chunk_size,
+            overlap,
+        )
 
         if not chunks:
-            raise ValueError("No document chunks were generated.")
+            raise ValueError(
+                "No document chunks were generated."
+            )
 
         collection = build_collection(
             name=name,
@@ -67,13 +76,54 @@ def ensure_collection(name, chunk_size, overlap, model):
         return collection.count()
 
 
-st.title("Docs Search")
-st.caption("Semantic search over Poetry 2.1.4 documentation")
+# --------------------------------------------------
+# Educational introduction
+# --------------------------------------------------
+
+st.caption("TASK 08 · LANGUAGE AI & RETRIEVAL")
+st.title("Document Search")
 
 st.write(
-    "Search the documentation using sentence embeddings "
-    "and a persistent ChromaDB vector database."
+    "Search Poetry documentation using embeddings "
+    "and a vector database."
 )
+
+with st.container(border=True):
+    st.markdown("#### What is Document Search?")
+    st.write(
+        "Long documents are divided into smaller pieces "
+        "called chunks. Each chunk is converted into an "
+        "embedding and stored in a vector database. "
+        "When you ask a question, the system finds the "
+        "chunks that are most similar to your query."
+    )
+
+col1, col2 = st.columns(2, gap="medium")
+
+with col1, st.container(border=True):
+    st.markdown("**Try it**")
+    st.write(
+        'Ask "How do I add a dependency using Poetry?" '
+        "and compare the results using different "
+        "chunking configurations."
+    )
+
+with col2, st.container(border=True):
+    st.markdown("**What to notice**")
+    st.write(
+        "Observe how chunk size, overlap, Top-k, and "
+        "similarity thresholds change the retrieved results."
+    )
+
+st.divider()
+
+
+# --------------------------------------------------
+# Interactive document search
+# --------------------------------------------------
+
+st.subheader("Interactive Demo")
+st.caption("Searching Poetry 2.1.4 documentation")
 
 configuration = st.selectbox(
     "Chunking configuration",
@@ -104,7 +154,10 @@ query = st.text_input(
     placeholder="How can I add a dependency using Poetry?",
 )
 
-search_clicked = st.button("Search", type="primary")
+search_clicked = st.button(
+    "Search",
+    type="primary",
+)
 
 if search_clicked:
     if not query.strip():
@@ -120,7 +173,10 @@ if search_clicked:
                 model,
             )
 
-            st.caption(f"Collection: {collection_name} | Stored chunks: {count}")
+            st.caption(
+                f"Collection: {collection_name} | "
+                f"Stored chunks: {count}"
+            )
 
             results = query_collection(
                 name=collection_name,
@@ -131,16 +187,25 @@ if search_clicked:
             )
 
             filtered_results = [
-                result for result in results if result["similarity"] >= min_similarity
+                result
+                for result in results
+                if result["similarity"] >= min_similarity
             ]
 
             if not filtered_results:
                 st.info("No good match found.")
             else:
-                st.success(f"Found {len(filtered_results)} matching chunks.")
+                st.success(
+                    f"Found {len(filtered_results)} matching chunks."
+                )
 
-                for rank, result in enumerate(filtered_results, start=1):
-                    st.markdown(f"**{rank}. {result['title']}**")
+                for rank, result in enumerate(
+                    filtered_results,
+                    start=1,
+                ):
+                    st.markdown(
+                        f"**{rank}. {result['title']}**"
+                    )
 
                     st.caption(
                         f"Source: {result['source']} | "
@@ -149,7 +214,10 @@ if search_clicked:
                     )
 
                     with st.expander("View retrieved text"):
-                        st.code(result["text"], language=None)
+                        st.code(
+                            result["text"],
+                            language=None,
+                        )
 
         except Exception as error:  # noqa: BLE001
             st.error(f"Document search failed: {error}")

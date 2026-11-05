@@ -1,4 +1,6 @@
 
+"""Educational Streamlit page for machine learning model training."""
+
 import pandas as pd
 import streamlit as st
 
@@ -11,19 +13,72 @@ from hello_poetry.data_utils import load_csv
 from hello_poetry.model_utils import train_model
 
 st.set_page_config(
-    page_title="Train Model",
+    page_title="Train Model | AI Learning Lab",
     page_icon="🤖",
     layout="wide",
 )
 
-st.title("🤖 Train Model")
-st.caption(
-    "Train and evaluate classification models using cleaned data."
+
+# --------------------------------------------------
+# Educational introduction
+# --------------------------------------------------
+
+st.caption("TASK 04 · DATA & MACHINE LEARNING")
+st.title("Train a Machine Learning Model")
+
+st.write(
+    "Train classification models using your dataset "
+    "and learn how to evaluate their performance."
 )
 
-# ------------------------------------------
+with st.container(border=True):
+    st.markdown("#### What is Model Training?")
+    st.write(
+        "Machine Learning models learn patterns from "
+        "training data and use them to make predictions. "
+        "We evaluate the model using separate test data "
+        "to see how well it performs on unseen examples."
+    )
+
+col1, col2 = st.columns(2, gap="medium")
+
+with col1, st.container(border=True):
+    st.markdown("**Try it**")
+    st.write(
+        "Upload a classification dataset, select the "
+        "target and feature columns, and train a "
+        "Logistic Regression, Decision Tree, or Random "
+        "Forest model."
+    )
+
+with col2, st.container(border=True):
+    st.markdown("**What to notice**")
+    st.write(
+        "Compare training, testing, and baseline accuracy. "
+        "Check the confusion matrix to understand which "
+        "classes the model predicts correctly or incorrectly."
+    )
+
+st.divider()
+
+
+# --------------------------------------------------
+# Interactive demo
+# --------------------------------------------------
+
+st.subheader("Interactive Demo")
+
+st.caption(
+    "Upload a CSV dataset to train and evaluate "
+    "a classification model."
+)
+
+
+# --------------------------------------------------
 # 1. Upload data
-# ------------------------------------------
+# --------------------------------------------------
+
+st.subheader("1. Upload Dataset")
 
 uploaded_file = st.file_uploader(
     "Upload a CSV dataset",
@@ -31,7 +86,10 @@ uploaded_file = st.file_uploader(
 )
 
 if uploaded_file is None:
-    st.info("Upload a CSV file to start training.")
+    st.info(
+        "Upload a CSV file to start training. "
+        "You can use the cleaned dataset from Task 3."
+    )
     st.stop()
 
 try:
@@ -41,9 +99,9 @@ except ValueError as error:
     st.stop()
 
 
-# ------------------------------------------
+# --------------------------------------------------
 # 2. Reuse Task 3 cleaning utilities
-# ------------------------------------------
+# --------------------------------------------------
 
 df = original_df.copy()
 
@@ -62,15 +120,26 @@ for column in convert_columns:
 
 df = remove_duplicates(df)
 
-st.subheader("1. Dataset Overview")
+
+# --------------------------------------------------
+# Dataset overview
+# --------------------------------------------------
+
+st.subheader("2. Dataset Overview")
 
 col1, col2, col3 = st.columns(3)
 
 col1.metric("Original Rows", len(original_df))
 col2.metric("Rows After Cleaning", len(df))
-col3.metric("Duplicates Removed", len(original_df) - len(df))
+col3.metric(
+    "Duplicates Removed",
+    len(original_df) - len(df),
+)
 
-st.dataframe(df.head(), use_container_width=True)
+st.dataframe(
+    df.head(),
+    width="stretch",
+)
 
 report = get_data_quality_report(df)
 
@@ -81,18 +150,22 @@ st.caption(
 )
 
 
-# ------------------------------------------
+# --------------------------------------------------
 # 3. Select target and features
-# ------------------------------------------
+# --------------------------------------------------
 
-st.subheader("2. Select Target and Features")
+st.subheader("3. Select Target and Features")
 
 columns = df.columns.tolist()
 
 target_column = st.selectbox(
     "Target column",
     columns,
-    index=columns.index("churned") if "churned" in columns else 0,
+    index=(
+        columns.index("churned")
+        if "churned" in columns
+        else 0
+    ),
 )
 
 available_features = [
@@ -113,14 +186,17 @@ selected_features = st.multiselect(
     default=default_features,
 )
 
-st.write("Selected features:", len(selected_features))
+st.write(
+    "Selected features:",
+    len(selected_features),
+)
 
 
-# ------------------------------------------
-# 4. Select model
-# ------------------------------------------
+# --------------------------------------------------
+# 4. Model settings
+# --------------------------------------------------
 
-st.subheader("3. Model Settings")
+st.subheader("4. Model Settings")
 
 model_name = st.selectbox(
     "Choose a classification model",
@@ -140,16 +216,18 @@ test_percent = st.slider(
 )
 
 
-# ------------------------------------------
-# 5. Train model
-# ------------------------------------------
+# --------------------------------------------------
+# 5. Train and evaluate model
+# --------------------------------------------------
 
-st.subheader("4. Model Evaluation")
+st.subheader("5. Model Evaluation")
 
 if st.button("🚀 Train Model", type="primary"):
 
     if not selected_features:
-        st.warning("Please select at least one feature.")
+        st.warning(
+            "Please select at least one feature."
+        )
         st.stop()
 
     try:
@@ -162,7 +240,9 @@ if st.button("🚀 Train Model", type="primary"):
                 test_size=test_percent / 100,
             )
 
-        st.success(f"{model_name} trained successfully!")
+        st.success(
+            f"{model_name} trained successfully!"
+        )
 
         # ----------------------------------
         # Accuracy metrics
@@ -194,19 +274,22 @@ if st.button("🚀 Train Model", type="primary"):
         # Baseline comparison
         # ----------------------------------
 
-        st.subheader("5. Model vs. Baseline")
+        st.subheader("6. Model vs. Baseline")
 
-        comparison = pd.DataFrame({
-            "Accuracy": [
-                result["train_accuracy"],
-                result["test_accuracy"],
-                result["baseline_accuracy"],
+        comparison = pd.DataFrame(
+            {
+                "Accuracy": [
+                    result["train_accuracy"],
+                    result["test_accuracy"],
+                    result["baseline_accuracy"],
+                ],
+            },
+            index=[
+                "Train",
+                "Test",
+                "Baseline",
             ],
-        }, index=[
-            "Train",
-            "Test",
-            "Baseline",
-        ])
+        )
 
         st.bar_chart(comparison)
 
@@ -220,19 +303,25 @@ if st.button("🚀 Train Model", type="primary"):
         # Confusion matrix
         # ----------------------------------
 
-        st.subheader("6. Confusion Matrix")
+        st.subheader("7. Confusion Matrix")
 
         labels = result["labels"]
 
         matrix_df = pd.DataFrame(
             result["confusion_matrix"],
-            index=[f"Actual {label}" for label in labels],
-            columns=[f"Predicted {label}" for label in labels],
+            index=[
+                f"Actual {label}"
+                for label in labels
+            ],
+            columns=[
+                f"Predicted {label}"
+                for label in labels
+            ],
         )
 
         st.dataframe(
             matrix_df,
-            use_container_width=True,
+            width="stretch",
         )
 
         st.caption(

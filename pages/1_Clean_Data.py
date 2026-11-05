@@ -1,4 +1,6 @@
 
+"""Educational Streamlit page for data cleaning and ML preparation."""
+
 import streamlit as st
 
 from hello_poetry.cleaning_utils import (
@@ -12,17 +14,68 @@ from hello_poetry.cleaning_utils import (
 from hello_poetry.data_utils import load_csv
 
 st.set_page_config(
-    page_title="Clean Data",
+    page_title="Data Cleaning | AI Learning Lab",
     page_icon="🧹",
     layout="wide",
 )
 
-st.title("🧹 Clean Data")
-st.caption("Inspect, clean, and prepare datasets for machine learning.")
+
+# --------------------------------------------------
+# Educational introduction
+# --------------------------------------------------
+
+st.caption("TASK 03 · DATA & MACHINE LEARNING")
+st.title("Data Cleaning & Preparation")
+
+st.write(
+    "Inspect dataset quality, fix common data problems, "
+    "and prepare data for machine learning."
+)
+
+with st.container(border=True):
+    st.markdown("#### What is Data Cleaning?")
+    st.write(
+        "Data cleaning is the process of finding and "
+        "handling missing values, duplicate rows, "
+        "incorrect data types, and potential outliers. "
+        "It helps make datasets more reliable for "
+        "analysis and machine learning."
+    )
+
+col1, col2 = st.columns(2, gap="medium")
+
+with col1, st.container(border=True):
+    st.markdown("**Try it**")
+    st.write(
+        "Upload a CSV file, review the data quality "
+        "report, apply cleaning options, and download "
+        "the cleaned dataset."
+    )
+
+with col2, st.container(border=True):
+    st.markdown("**What to notice**")
+    st.write(
+        "Compare missing values and duplicates before "
+        "and after cleaning. Notice how ML preparation "
+        "uses training data to fit preprocessing steps."
+    )
+
+st.divider()
+
+
+# --------------------------------------------------
+# Interactive Demo
+# --------------------------------------------------
+
+st.subheader("Interactive Demo")
+st.caption("Upload a CSV file to explore cleaning options.")
+
 
 # --------------------------------------------------
 # 1. Upload CSV
 # --------------------------------------------------
+
+st.subheader("1. Upload Dataset")
 
 uploaded_file = st.file_uploader(
     "Upload a CSV file",
@@ -44,7 +97,7 @@ except ValueError as error:
 # 2. Original Dataset
 # --------------------------------------------------
 
-st.subheader("1. Original Dataset")
+st.subheader("2. Original Dataset")
 
 original_report = get_data_quality_report(original_df)
 
@@ -54,14 +107,17 @@ col1.metric("Rows", original_report["shape"][0])
 col2.metric("Columns", original_report["shape"][1])
 col3.metric("Duplicates", original_report["duplicates"])
 
-st.dataframe(original_df.head(), use_container_width=True)
+st.dataframe(
+    original_df.head(),
+    width="stretch",
+)
 
 
 # --------------------------------------------------
 # 3. Data Quality Report
 # --------------------------------------------------
 
-st.subheader("2. Data Quality Report")
+st.subheader("3. Data Quality Report")
 
 col1, col2 = st.columns(2)
 
@@ -81,7 +137,7 @@ st.write(detect_outliers(original_df))
 # 4. Cleaning Options
 # --------------------------------------------------
 
-st.subheader("3. Cleaning Options")
+st.subheader("4. Cleaning Options")
 
 cleaned_df = original_df.copy()
 
@@ -96,13 +152,15 @@ convert_columns = st.multiselect(
 )
 
 for column in convert_columns:
-    cleaned_df = convert_numeric_column(cleaned_df, column)
+    cleaned_df = convert_numeric_column(
+        cleaned_df,
+        column,
+    )
 
 
-# IMPORTANT:
-# Keep a separate copy for ML preprocessing.
-# We remove duplicates but do not fill missing values yet.
-# The ML pipeline will fit imputers using training data only.
+# Keep ML preprocessing separate to avoid data leakage.
+# Remove duplicates, but let the ML pipeline fit
+# missing-value imputers using training data only.
 ml_df = remove_duplicates(cleaned_df)
 
 
@@ -118,18 +176,29 @@ missing_strategy = st.selectbox(
     index=4,
 )
 
-
 if missing_strategy == "Drop rows":
-    cleaned_df = handle_missing_values(cleaned_df, "drop")
+    cleaned_df = handle_missing_values(
+        cleaned_df,
+        "drop",
+    )
 
 elif missing_strategy == "Fill with mean":
-    cleaned_df = handle_missing_values(cleaned_df, "mean")
+    cleaned_df = handle_missing_values(
+        cleaned_df,
+        "mean",
+    )
 
 elif missing_strategy == "Fill with median":
-    cleaned_df = handle_missing_values(cleaned_df, "median")
+    cleaned_df = handle_missing_values(
+        cleaned_df,
+        "median",
+    )
 
 elif missing_strategy == "Fill with mode":
-    cleaned_df = handle_missing_values(cleaned_df, "mode")
+    cleaned_df = handle_missing_values(
+        cleaned_df,
+        "mode",
+    )
 
 
 remove_dupes = st.checkbox(
@@ -145,7 +214,7 @@ if remove_dupes:
 # 5. Before / After Comparison
 # --------------------------------------------------
 
-st.subheader("4. Before / After Comparison")
+st.subheader("5. Before / After Comparison")
 
 cleaned_report = get_data_quality_report(cleaned_df)
 
@@ -156,24 +225,36 @@ with col1:
 
     st.dataframe(
         original_df.head(),
-        use_container_width=True,
+        width="stretch",
     )
 
     st.write("Rows:", original_report["shape"][0])
-    st.write("Missing:", int(original_df.isna().sum().sum()))
-    st.write("Duplicates:", original_report["duplicates"])
+    st.write(
+        "Missing:",
+        int(original_df.isna().sum().sum()),
+    )
+    st.write(
+        "Duplicates:",
+        original_report["duplicates"],
+    )
 
 with col2:
     st.write("After")
 
     st.dataframe(
         cleaned_df.head(),
-        use_container_width=True,
+        width="stretch",
     )
 
     st.write("Rows:", cleaned_report["shape"][0])
-    st.write("Missing:", int(cleaned_df.isna().sum().sum()))
-    st.write("Duplicates:", cleaned_report["duplicates"])
+    st.write(
+        "Missing:",
+        int(cleaned_df.isna().sum().sum()),
+    )
+    st.write(
+        "Duplicates:",
+        cleaned_report["duplicates"],
+    )
 
 
 # --------------------------------------------------
@@ -192,7 +273,7 @@ st.download_button(
 # 7. Machine Learning Preparation
 # --------------------------------------------------
 
-st.subheader("5. Machine Learning Preparation")
+st.subheader("6. Machine Learning Preparation")
 
 st.caption(
     "ML preprocessing uses a separate dataset. "
@@ -240,7 +321,9 @@ if st.button("Prepare Train / Test Data"):
             encode=encode,
         )
 
-        st.success("Dataset prepared successfully!")
+        st.success(
+            "Dataset prepared successfully!"
+        )
 
         col1, col2 = st.columns(2)
 
