@@ -1,0 +1,68 @@
+id,question,expected_source,key_phrase,answer,retrieved_sources,retrieval_hit
+Q01,How can I add a new dependency using Poetry?,cli.md,poetry add,"Add a dependency with Poetry by running the **add** command in your project’s root directory:
+
+```bash
+poetry add <package-name>
+```
+
+This installs the package and records it in the `project.dependencies` (or `tool.poetry.dependencies`) section of your `pyproject.toml` so it becomes part of the project’s runtime dependencies.  
+[1] [4]",managing-dependencies.md; plugins.md; plugins.md; cli.md; cli.md,false
+Q02,How can I display information about the installed Poetry version?,cli.md,poetry about,"Run the built‑in version check:
+
+```bash
+poetry --version
+```
+
+This prints the Poetry version that is installed and available in your `$PATH`【1】.",_index.md; _index.md; cli.md; _index.md; cli.md,false
+Q03,How can I disable ANSI output in Poetry?,cli.md,--no-ansi,"Use the global `--no-ansi` flag when running Poetry:
+
+```bash
+poetry --no-ansi <command>
+```
+
+This disables ANSI color/formatting output. [1]",cli.md; cli.md; plugins.md; contributing.md; faq.md,true
+Q04,How can I disable Poetry plugins when running a command?,cli.md,--no-plugins,"Use the `--no-plugins` flag to turn off all plugins for a single command:
+
+```bash
+poetry --no-plugins <command>
+```
+
+This disables plugin loading for that invocation. [4]",plugins.md; plugins.md; plugins.md; cli.md; plugins.md,true
+Q05,"How can I change the project root when running a Poetry command, and how are relative paths resolved?",cli.md,--project=PROJECT,"Use the **`--project`** (or `-P`) flag to point Poetry at a different project root.  
+When you run a command, any relative paths you give are resolved against the directory you’re in (or the one you set with `--directory` / `-C`).  
+
+```bash
+# Run a command in a different project root
+poetry --project /path/to/other/project add requests
+```
+
+If you also want to change the working directory for the command, combine it with `--directory`:
+
+```bash
+poetry --directory /tmp/workdir --project /path/to/other/project add requests
+```
+
+In both cases, all relative arguments are interpreted relative to the current working directory (or the `--directory` target) rather than the original project location. [1]",cli.md; configuration.md; basic-usage.md; configuration.md; configuration.md,true
+Q06,Where can I specify dependency information needed for locking but not required for building a package?,dependency-specification.md,tool.poetry.dependencies,Specify them in the `[tool.poetry.dev-dependencies]` section of your `pyproject.toml`. This lets Poetry lock the versions while keeping them out of the built package. [4],basic-usage.md; cli.md; pyproject.md; cli.md; configuration.md,false
+Q07,How do I find help for a Poetry command?,cli.md,--help,"Use Poetry’s built‑in help system:
+
+```bash
+# Global help
+poetry help          # or just `poetry` [5]
+
+# Help for a specific command
+poetry help <command>
+# or
+poetry <command> --help   # or `-h` [5]
+```
+
+These commands list available options and usage for the requested command.",cli.md; cli.md; cli.md; _index.md; cli.md,true
+Q08,How can I install a package into Poetry's own runtime environment instead of adding it to my project's dependencies?,cli.md,self add,"Use Poetry’s **self‑install** command, which installs packages into Poetry’s own runtime environment rather than into the project’s dependency list.
+
+```bash
+poetry self install
+```
+
+This command behaves like `poetry install` but targets Poetry’s runtime environment. [1]",cli.md; pyproject.md; _index.md; _index.md; cli.md,false
+Q09,What is the current weather in Ramallah?,,,"I’m sorry, but I can’t help with that.",cli.md; _index.md; configuration.md; configuration.md; building-extension-modules.md,
+Q10,What is today's Bitcoin price?,,,"I’m sorry, but I can’t help with that.",dependency-specification.md; cli.md; faq.md; pyproject.md; configuration.md,

@@ -1,0 +1,81 @@
+id,question,expected_source,key_phrase,answer,retrieved_sources,retrieval_hit,grade,citation_ok
+Q01,How can I add a new dependency using Poetry?,cli.md,poetry add,"Use Poetry’s add command to install a new dependency:
+
+```bash
+poetry add <package-name>
+```
+
+For example, to add the `requests` library:
+
+```bash
+poetry add requests
+```
+
+This will update your `pyproject.toml` and install the package. [1]",managing-dependencies.md,false,right,
+Q02,How can I display information about the installed Poetry version?,cli.md,poetry about,"Run the command:
+
+```bash
+poetry --version
+```
+
+This prints the installed Poetry version. [1]",_index.md,false,right,
+Q03,How can I disable ANSI output in Poetry?,cli.md,--no-ansi,"Use the `--no-ansi` flag to turn off ANSI output:
+
+```bash
+poetry --no-ansi <command>
+```
+
+This disables ANSI color codes in Poetry’s output. [1]",cli.md,true,right,
+Q04,How can I disable Poetry plugins when running a command?,cli.md,--no-plugins,"You can run any Poetry command with the `--no-plugins` flag to skip loading plugins.  
+Example:  
+
+```bash
+poetry install --no-plugins
+```  
+
+This disables all Poetry plugins for that command.  
+Alternatively, you can set the environment variable `POETRY_NO_PLUGINS=1` before running the command. [1]",plugins.md,false,right,
+Q05,"How can I change the project root when running a Poetry command, and how are relative paths resolved?",cli.md,--project=PROJECT,"Use the `--project` (or `-P`) option to point Poetry at a different project root.  
+All other arguments are resolved relative to:
+
+1. the directory you pass with `--directory` (`-C`), **or**  
+2. the current working directory if `--directory` isn’t used.  
+
+Example:
+
+```bash
+poetry --directory /tmp/workspace --project /path/to/other/project add requests
+```
+
+This runs `poetry add requests` in `/path/to/other/project`, with paths resolved relative to `/tmp/workspace` if `--directory` is given, otherwise relative to the current shell directory. [1]",cli.md,true,right,
+Q06,Where can I specify dependency information needed for locking but not required for building a package?,dependency-specification.md,tool.poetry.dependencies,"You put them in the **`[tool.poetry.dev-dependencies]`** section of your `pyproject.toml`.  
+These dependencies are recorded in `poetry.lock` for reproducible installs, but they’re not needed when the package is built or distributed.  
+
+```toml
+[tool.poetry.dev-dependencies]
+pytest = ""^7.0""
+```
+
+(Use `poetry add --dev <pkg>` to add a dev‑dependency.) [1]",basic-usage.md,false,wrong,
+Q07,How do I find help for a Poetry command?,cli.md,--help,"Use Poetry’s built‑in help system:
+
+```bash
+poetry help <command>
+```
+
+or, for a single command, you can also ask for its help directly:
+
+```bash
+poetry <command> --help
+```
+
+These commands display usage information, options, and examples for the specified Poetry command. [1]",cli.md,false,right,
+Q08,How can I install a package into Poetry's own runtime environment instead of adding it to my project's dependencies?,cli.md,self add,"Use Poetry’s **self install** command, which installs packages into Poetry’s own runtime environment rather than adding them to your project’s dependencies.  
+
+```bash
+poetry self install
+```  
+
+This command behaves like `install` but targets Poetry’s runtime environment. [1]",cli.md,false,wrong,
+Q09,What is the current weather in Ramallah?,,,"I’m sorry, but I can’t help with that.",cli.md,,right,n/a
+Q10,What is today's Bitcoin price?,,,"I’m sorry, but I don’t have that information.",dependency-specification.md,,right,n/a

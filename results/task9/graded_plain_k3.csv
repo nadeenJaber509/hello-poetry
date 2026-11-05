@@ -1,0 +1,87 @@
+id,question,expected_source,key_phrase,answer,retrieved_sources,retrieval_hit,grade,citation_ok
+Q01,How can I add a new dependency using Poetry?,cli.md,poetry add,"Use Poetry’s `add` command:
+
+```bash
+poetry add <package>          # regular dependency
+poetry add --dev <package>    # dev‑only dependency
+```
+
+Replace `<package>` with the package name (and optional version specifier).",,,right,n/a
+Q02,How can I display information about the installed Poetry version?,cli.md,poetry about,"Use Poetry’s version flag:
+
+```bash
+poetry --version   # or poetry -V
+```
+
+This prints the installed Poetry version.",,,right,n/a
+Q03,How can I disable ANSI output in Poetry?,cli.md,--no-ansi,"Use Poetry’s color setting:
+
+```bash
+poetry config color never
+```
+
+This disables ANSI escape codes globally.  
+(You can also run a single command with `poetry --no-color <cmd>`.)",,,partly,n/a
+Q04,How can I disable Poetry plugins when running a command?,cli.md,--no-plugins,"You can turn off all Poetry plugins for a single run with the `--no-plugins` flag:
+
+```bash
+poetry --no-plugins <command>
+```
+
+For example, to install dependencies without loading any plugins:
+
+```bash
+poetry --no-plugins install
+```
+
+(You can also set the environment variable `POETRY_NO_PLUGINS=1` to achieve the same effect.)",,,right,n/a
+Q05,"How can I change the project root when running a Poetry command, and how are relative paths resolved?",cli.md,--project=PROJECT,"**Change the project root**
+
+```bash
+poetry --directory /path/to/project <command>
+```
+
+or the short form:
+
+```bash
+poetry -C /path/to/project <command>
+```
+
+This tells Poetry to treat `/path/to/project` as the project root for that command.
+
+**How relative paths are resolved**
+
+* In `pyproject.toml` (e.g., `packages = [{include = ""mypkg""}]`) the paths are resolved **relative to the project root** you just set.
+* When you run a command with `poetry run`, the shell’s current working directory is still used for any paths you pass to the command.  
+  The virtual environment’s `PYTHONPATH` is set to the project root, so imports inside the package are resolved relative to that root.",,,partly,n/a
+Q06,Where can I specify dependency information needed for locking but not required for building a package?,dependency-specification.md,tool.poetry.dependencies,"In Poetry you put those dependencies in the **`[tool.poetry.dev-dependencies]`** section of `pyproject.toml`.  
+They’re used when generating the lock file but aren’t needed to build the package.
+
+```bash
+# Add a dev‑only dependency
+poetry add --dev <package>
+```
+
+(Use `poetry lock --no-dev` if you want to lock without dev deps.)",,,wrong,n/a
+Q07,How do I find help for a Poetry command?,cli.md,--help,"Use Poetry’s built‑in help:
+
+```bash
+poetry help <command>
+```
+
+or simply:
+
+```bash
+poetry <command> --help
+```
+
+Both will display the usage and options for that command.",,,right,n/a
+Q08,How can I install a package into Poetry's own runtime environment instead of adding it to my project's dependencies?,cli.md,self add,"Use Poetry’s **self‑install** command to add a package to Poetry’s own environment:
+
+```bash
+poetry self add <package>
+```
+
+This installs `<package>` into Poetry’s runtime (the environment that runs Poetry itself) rather than into the current project’s `pyproject.toml`.",,,right,n/a
+Q09,What is the current weather in Ramallah?,,,"I’m sorry, but I can’t help with that.",,,right,n/a
+Q10,What is today's Bitcoin price?,,,"I’m sorry, but I can’t help with that.",,,right,n/a

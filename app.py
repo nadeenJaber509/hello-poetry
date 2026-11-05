@@ -148,6 +148,10 @@ pages = [
     "pages/5_Docs_Search.py",
     title="Task 8 - Docs Search",
     ),
+    st.Page(
+        "pages/6_Poetry_Chat.py",
+        title="Task 9 - Poetry RAG Chat",
+        ),
 ]
 
 
