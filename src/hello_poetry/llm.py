@@ -61,3 +61,21 @@ def parse_label(text: str) -> str:
         return label
 
     return "invalid"
+
+
+
+def chat_with_tools(messages, model, tool_schemas):
+    """Call Groq and let the model request local tools."""
+    from dotenv import load_dotenv
+    from groq import Groq
+
+    load_dotenv()
+    client = Groq()
+
+    return client.chat.completions.create(
+        model=model,
+        messages=messages,
+        tools=tool_schemas,
+        tool_choice="auto",
+        temperature=0,
+    )
