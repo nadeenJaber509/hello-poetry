@@ -231,3 +231,68 @@ The step limit is important because it prevents unnecessary repeated model calls
 
 This experiment also showed why we need stronger validation and guardrails in the next parts.
 
+## Part 2: JSON output
+
+## Part 2: Structured JSON Output
+
+### Goal
+
+The goal of this part is to make the LLM return structured JSON that Python can read and validate instead of returning free text.
+
+### Implementation
+
+I installed Pydantic and created `schemas.py` with a `SupportAnswer` model containing five fields:
+
+- `answerable`: Boolean indicating whether the documentation supports an answer.
+- `answer`: The generated answer.
+- `commands`: A list of commands.
+- `sources`: A list of source filenames.
+- `confidence`: Low, medium, or high.
+
+I also implemented `get_structured_answer()`, which calls Groq, validates the JSON using Pydantic, and retries if validation fails.
+
+With `max_retries=2`, the function allows up to three attempts in total. Each model response is saved in a JSONL file.
+
+### Validation Tests
+
+I tested the Pydantic schema with a valid response and an invalid confidence value.
+
+The valid response passed, while `"very high"` was rejected because the accepted confidence values are `"low"`, `"medium"`, and `"high"`.
+
+I also created offline tests using mocked LLM responses to verify successful validation, retry behavior, and failure after the retry limit.
+
+### Evaluation
+
+I ran a pilot experiment on 10 questions from Task 8 using the same model, `openai/gpt-oss-20b`, at temperature 0.
+
+I compared two configurations:
+
+1. **JSON Mode:** Groq was called with `response_format={"type": "json_object"}`.
+2. **Prompt Only:** The model received JSON instructions in the prompt without the JSON response format option.
+
+| Measure | JSON Mode | Prompt Only |
+|---|---:|---:|
+| Valid JSON on first attempt | 10/10 | 10/10 |
+| Valid after retry | 0 | 0 |
+| Failed validation | 0 | 0 |
+| API errors | 0 | 0 |
+| Total model calls | 10 | 10 |
+
+### Observations
+
+Both methods produced responses that passed Pydantic validation on the first attempt for all 10 questions.
+
+In this small experiment, enabling JSON Mode did not improve the measured first-attempt validation rate.
+
+However, this does not mean that JSON Mode is unnecessary. A larger dataset or more difficult cases may reveal differences.
+
+The experiment measured output structure only. No retrieved documentation evidence was provided to the model, so these results do not measure answer correctness.
+
+### What I Learned
+
+Pydantic validation is important because even syntactically valid JSON can contain invalid field types, missing fields, or unsupported enum values.
+
+However, **valid JSON does not guarantee a correct answer**. For example, an answer containing a nonexistent Poetry command could still pass the schema if all fields have valid types.
+
+This is why the next part introduces guardrails to verify the evidence, commands, and citations.
+

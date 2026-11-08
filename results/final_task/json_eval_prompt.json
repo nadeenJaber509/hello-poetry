@@ -1,0 +1,142 @@
+{
+  "Q01": {
+    "question": "How can I add a new dependency using Poetry?",
+    "status": "valid",
+    "valid_first_try": true,
+    "retries": 0,
+    "model_calls": 1,
+    "answer": {
+      "answerable": true,
+      "answer": "You can add a new dependency using Poetry by running the command `poetry add <package-name>` in your project directory.",
+      "commands": [],
+      "sources": [],
+      "confidence": "low"
+    }
+  },
+  "Q02": {
+    "question": "How can I display information about the installed Poetry version?",
+    "status": "valid",
+    "valid_first_try": true,
+    "retries": 0,
+    "model_calls": 1,
+    "answer": {
+      "answerable": false,
+      "answer": "I don't have information about that.",
+      "commands": [],
+      "sources": [],
+      "confidence": "low"
+    }
+  },
+  "Q03": {
+    "question": "How can I disable ANSI output in Poetry?",
+    "status": "valid",
+    "valid_first_try": true,
+    "retries": 0,
+    "model_calls": 1,
+    "answer": {
+      "answerable": false,
+      "answer": "I don't have evidence to provide a definitive answer.",
+      "commands": [],
+      "sources": [],
+      "confidence": "low"
+    }
+  },
+  "Q04": {
+    "question": "How can I disable Poetry plugins when running a command?",
+    "status": "valid",
+    "valid_first_try": true,
+    "retries": 0,
+    "model_calls": 1,
+    "answer": {
+      "answerable": true,
+      "answer": "You can disable Poetry plugins for a specific command by adding the `--no-plugins` flag to the command line. For example: `poetry run --no-plugins <command>` will run the command without loading any Poetry plugins.",
+      "commands": [],
+      "sources": [],
+      "confidence": "low"
+    }
+  },
+  "Q05": {
+    "question": "How can I change the project root when running a Poetry command, and how are relative paths resolved?",
+    "status": "valid",
+    "valid_first_try": true,
+    "retries": 0,
+    "model_calls": 1,
+    "answer": {
+      "answerable": false,
+      "answer": "",
+      "commands": [],
+      "sources": [],
+      "confidence": "low"
+    }
+  },
+  "Q06": {
+    "question": "Where can I specify dependency information needed for locking but not required for building a package?",
+    "status": "valid",
+    "valid_first_try": true,
+    "retries": 0,
+    "model_calls": 1,
+    "answer": {
+      "answerable": true,
+      "answer": "In a Rust project, you can list dependencies that are only needed for locking (e.g., for tests, examples, or benchmarks) under the `[dev-dependencies]` section of your `Cargo.toml`. These dependencies are included in `Cargo.lock` but are not required to build the package itself.",
+      "commands": [],
+      "sources": [],
+      "confidence": "high"
+    }
+  },
+  "Q07": {
+    "question": "How do I find help for a Poetry command?",
+    "status": "valid",
+    "valid_first_try": true,
+    "retries": 0,
+    "model_calls": 1,
+    "answer": {
+      "answerable": true,
+      "answer": "You can get help by running `poetry help` or by appending `--help` to any Poetry command (e.g., `poetry install --help`).",
+      "commands": [],
+      "sources": [],
+      "confidence": "medium"
+    }
+  },
+  "Q08": {
+    "question": "How can I install a package into Poetry's own runtime environment instead of adding it to my project's dependencies?",
+    "status": "valid",
+    "valid_first_try": true,
+    "retries": 0,
+    "model_calls": 1,
+    "answer": {
+      "answerable": false,
+      "answer": "I don't have evidence to answer that question.",
+      "commands": [],
+      "sources": [],
+      "confidence": "low"
+    }
+  },
+  "Q09": {
+    "question": "What is the current weather in Ramallah?",
+    "status": "valid",
+    "valid_first_try": true,
+    "retries": 0,
+    "model_calls": 1,
+    "answer": {
+      "answerable": false,
+      "answer": "",
+      "commands": [],
+      "sources": [],
+      "confidence": "low"
+    }
+  },
+  "Q10": {
+    "question": "What is today's Bitcoin price?",
+    "status": "valid",
+    "valid_first_try": true,
+    "retries": 0,
+    "model_calls": 1,
+    "answer": {
+      "answerable": false,
+      "answer": "",
+      "commands": [],
+      "sources": [],
+      "confidence": "low"
+    }
+  }
+}

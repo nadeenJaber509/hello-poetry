@@ -79,3 +79,24 @@ def chat_with_tools(messages, model, tool_schemas):
         tool_choice="auto",
         temperature=0,
     )
+
+
+
+def chat_json(messages, model, json_mode=True):
+    """Call Groq with optional JSON mode."""
+    from dotenv import load_dotenv
+    from groq import Groq
+
+    load_dotenv()
+    client = Groq()
+
+    options = {
+        "model": model,
+        "messages": messages,
+        "temperature": 0,
+    }
+
+    if json_mode:
+        options["response_format"] = {"type": "json_object"}
+
+    return client.chat.completions.create(**options)

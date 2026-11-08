@@ -1,0 +1,142 @@
+{
+  "Q01": {
+    "question": "How can I add a new dependency using Poetry?",
+    "status": "valid",
+    "valid_first_try": true,
+    "retries": 0,
+    "model_calls": 1,
+    "answer": {
+      "answerable": true,
+      "answer": "You can add a new dependency with Poetry by using its add command, which installs the package and updates your pyproject.toml and lock file.",
+      "commands": [],
+      "sources": [],
+      "confidence": "low"
+    }
+  },
+  "Q02": {
+    "question": "How can I display information about the installed Poetry version?",
+    "status": "valid",
+    "valid_first_try": true,
+    "retries": 0,
+    "model_calls": 1,
+    "answer": {
+      "answerable": true,
+      "answer": "You can display the installed Poetry version by running the Poetry command line with the --version flag, e.g., `poetry --version`.",
+      "commands": [],
+      "sources": [],
+      "confidence": "medium"
+    }
+  },
+  "Q03": {
+    "question": "How can I disable ANSI output in Poetry?",
+    "status": "valid",
+    "valid_first_try": true,
+    "retries": 0,
+    "model_calls": 1,
+    "answer": {
+      "answerable": false,
+      "answer": "I don't have evidence on how to disable ANSI output in Poetry.",
+      "commands": [],
+      "sources": [],
+      "confidence": "low"
+    }
+  },
+  "Q04": {
+    "question": "How can I disable Poetry plugins when running a command?",
+    "status": "valid",
+    "valid_first_try": true,
+    "retries": 0,
+    "model_calls": 1,
+    "answer": {
+      "answerable": true,
+      "answer": "You can disable Poetry plugins for a single command by passing the `--no-plugins` flag to the Poetry command you want to run.",
+      "commands": [],
+      "sources": [],
+      "confidence": "low"
+    }
+  },
+  "Q05": {
+    "question": "How can I change the project root when running a Poetry command, and how are relative paths resolved?",
+    "status": "valid",
+    "valid_first_try": true,
+    "retries": 0,
+    "model_calls": 1,
+    "answer": {
+      "answerable": true,
+      "answer": "You can point Poetry to a different project root by using the `--directory` (or `-C`) option when invoking a Poetry command, e.g. `poetry --directory /path/to/project install`. All relative paths that Poetry resolves (such as paths in `pyproject.toml` or when running scripts) are interpreted relative to the directory you specify with `--directory` (or the current working directory if none is given).",
+      "commands": [],
+      "sources": [],
+      "confidence": "medium"
+    }
+  },
+  "Q06": {
+    "question": "Where can I specify dependency information needed for locking but not required for building a package?",
+    "status": "valid",
+    "valid_first_try": true,
+    "retries": 0,
+    "model_calls": 1,
+    "answer": {
+      "answerable": false,
+      "answer": "I don't have enough information to answer that question.",
+      "commands": [],
+      "sources": [],
+      "confidence": "low"
+    }
+  },
+  "Q07": {
+    "question": "How do I find help for a Poetry command?",
+    "status": "valid",
+    "valid_first_try": true,
+    "retries": 0,
+    "model_calls": 1,
+    "answer": {
+      "answerable": false,
+      "answer": "I don't have evidence to answer that question.",
+      "commands": [],
+      "sources": [],
+      "confidence": "low"
+    }
+  },
+  "Q08": {
+    "question": "How can I install a package into Poetry's own runtime environment instead of adding it to my project's dependencies?",
+    "status": "valid",
+    "valid_first_try": true,
+    "retries": 0,
+    "model_calls": 1,
+    "answer": {
+      "answerable": false,
+      "answer": "I don't have evidence to answer that question.",
+      "commands": [],
+      "sources": [],
+      "confidence": "low"
+    }
+  },
+  "Q09": {
+    "question": "What is the current weather in Ramallah?",
+    "status": "valid",
+    "valid_first_try": true,
+    "retries": 0,
+    "model_calls": 1,
+    "answer": {
+      "answerable": false,
+      "answer": "I don't have enough information to answer that question.",
+      "commands": [],
+      "sources": [],
+      "confidence": "low"
+    }
+  },
+  "Q10": {
+    "question": "What is today's Bitcoin price?",
+    "status": "valid",
+    "valid_first_try": true,
+    "retries": 0,
+    "model_calls": 1,
+    "answer": {
+      "answerable": false,
+      "answer": "I don't have enough information to answer.",
+      "commands": [],
+      "sources": [],
+      "confidence": "low"
+    }
+  }
+}
