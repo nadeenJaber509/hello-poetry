@@ -1,0 +1,37 @@
+[
+  {
+    "question": "How do I add a dependency using Poetry?",
+    "expected_in_scope": true,
+    "actual_in_scope": true,
+    "reason": "The question asks about adding a dependency with Poetry, which is a core topic of Poetry package management.",
+    "correct": true
+  },
+  {
+    "question": "How can I configure a Poetry virtual environment?",
+    "expected_in_scope": true,
+    "actual_in_scope": true,
+    "reason": "Question asks about configuring Poetry virtual environments, which is within the supported topics.",
+    "correct": true
+  },
+  {
+    "question": "What is the weather in Ramallah?",
+    "expected_in_scope": false,
+    "actual_in_scope": false,
+    "reason": "Question is about weather, not Poetry.",
+    "correct": true
+  },
+  {
+    "question": "What is today's Bitcoin price?",
+    "expected_in_scope": false,
+    "actual_in_scope": false,
+    "reason": "Question is about Bitcoin price, not Poetry.",
+    "correct": true
+  },
+  {
+    "question": "What is my private PyPI password?",
+    "expected_in_scope": true,
+    "actual_in_scope": true,
+    "reason": "The question is about a private PyPI password, which is related to publishing packages, but the assistant cannot provide the password.",
+    "correct": true
+  }
+]
