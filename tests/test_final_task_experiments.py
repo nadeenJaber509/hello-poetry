@@ -7,7 +7,9 @@ from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from unittest.mock import patch
 
+import httpx
 import pytest
+from groq import RateLimitError
 
 from hello_poetry import team_graph
 from hello_poetry.agent import evidence_from_tools
@@ -523,6 +525,90 @@ def test_retry_failed_graph_requires_failed_case_and_separate_output(tmp_path):
         final_task_part8.retry_failed_graph("Q05", comparison, comparison)
     with pytest.raises(ValueError, match="No completed coordinator case"):
         final_task_part8.retry_failed_graph("Q06", comparison, tmp_path / "retry.json")
+
+
+def test_trace_ten_resumes_without_retrying_saved_rows(tmp_path):
+    cases = [
+        {"id": "Q04", "question": "Completed?"},
+        {"id": "Q27", "question": "Failed?"},
+    ]
+    output = tmp_path / "traces.json"
+    saved = {
+        "Q04": {"question": "Completed?", "status": "completed", "result": {}},
+        "Q27": {"question": "Failed?", "status": "error", "error": "old 429"},
+    }
+    output.write_text(json.dumps(saved), encoding="utf-8")
+    with (
+        patch.object(final_task_part8, "selected_cases", return_value=cases),
+        patch.object(final_task_part8, "_langsmith") as langsmith,
+        patch.object(final_task_part8, "traced_team") as team,
+    ):
+        assert final_task_part8.trace_ten(2, output=output) == saved
+    assert json.loads(output.read_text(encoding="utf-8")) == saved
+    langsmith.assert_not_called()
+    team.assert_not_called()
+
+
+def test_trace_ten_explicit_retry_preserves_error_history(tmp_path):
+    case = {"id": "Q27", "question": "Retry?"}
+    output = tmp_path / "traces.json"
+    original = {"question": "Retry?", "status": "error", "error": "first failure"}
+    output.write_text(json.dumps({"Q27": original}), encoding="utf-8")
+    with (
+        patch.object(final_task_part8, "selected_cases", return_value=[case]),
+        patch.object(final_task_part8, "_langsmith"),
+        patch.object(
+            final_task_part8,
+            "_retry",
+            side_effect=[RuntimeError("second failure"), {"answer": "done"}],
+        ) as retry,
+        patch.object(final_task_part8.time, "sleep"),
+    ):
+        failed = final_task_part8.trace_ten(1, output=output, retry_errors=True)
+        assert failed["Q27"]["history"] == [original]
+        completed = final_task_part8.trace_ten(1, output=output, retry_errors=True)
+        final_task_part8.trace_ten(1, output=output, retry_errors=True)
+    assert retry.call_count == 2
+    assert completed["Q27"]["status"] == "completed"
+    assert [item["error"] for item in completed["Q27"]["history"]] == [
+        "first failure",
+        "RuntimeError: second failure",
+    ]
+    assert json.loads(output.read_text(encoding="utf-8")) == completed
+
+
+def test_trace_ten_stops_on_first_429_without_retrying_next_case(tmp_path):
+    cases = [
+        {"id": "Q27", "question": "First?"},
+        {"id": "Q30", "question": "Second?"},
+    ]
+    output = tmp_path / "traces.json"
+    saved = {
+        case["id"]: {
+            "question": case["question"],
+            "status": "error",
+            "error": "previous 429",
+        }
+        for case in cases
+    }
+    output.write_text(json.dumps(saved), encoding="utf-8")
+    response = httpx.Response(
+        429, request=httpx.Request("POST", "https://api.groq.com")
+    )
+    error = RateLimitError("TPM limit 8000", response=response, body={})
+    with (
+        patch.object(final_task_part8, "selected_cases", return_value=cases),
+        patch.object(final_task_part8, "_langsmith"),
+        patch.object(final_task_part8, "traced_team", side_effect=error) as team,
+        patch.object(final_task_part8.time, "sleep") as sleep,
+    ):
+        rows = final_task_part8.trace_ten(2, output=output, retry_errors=True)
+    team.assert_called_once_with("First?")
+    sleep.assert_not_called()
+    assert rows["Q27"]["status"] == "error"
+    assert rows["Q27"]["history"] == [saved["Q27"]]
+    assert rows["Q30"] == saved["Q30"]
+    assert json.loads(output.read_text(encoding="utf-8")) == rows
 
 
 def test_langsmith_upload_is_prepared_without_network(tmp_path):

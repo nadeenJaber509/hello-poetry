@@ -36,7 +36,7 @@ def _load(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
 
 
-def _retry(call):
+def _retry(call, stop_on_429: bool = False):
     for attempt in range(3):
         try:
             return call()
@@ -46,6 +46,12 @@ def _retry(call):
             RateLimitError,
             APIStatusError,
         ) as exc:
+            if (
+                stop_on_429
+                and isinstance(exc, APIStatusError)
+                and exc.status_code == 429
+            ):
+                raise
             if (
                 isinstance(exc, APIStatusError)
                 and exc.status_code == 429
@@ -215,19 +221,34 @@ def trace_ten(
     limit: int = 10,
     output: Path = RESULTS / "langsmith_traces.json",
     cases_path: Path = CASES,
+    retry_errors: bool = False,
 ) -> dict:
     """Checkpoint ten public test cases traced to LangSmith."""
     if not 1 <= limit <= 10:
         raise ValueError("limit must be between 1 and 10")
-    _langsmith()
     rows = _load(output)
     for case in selected_cases(cases_path)[:limit]:
-        if case["id"] in rows:
-            if rows[case["id"]]["question"] != case["question"]:
+        previous = rows.get(case["id"])
+        if previous:
+            if previous["question"] != case["question"]:
                 raise ValueError(f"Saved question changed for {case['id']}")
-            continue
+            if previous["status"] != "error" or not retry_errors:
+                continue
+        _langsmith()
+        history = (
+            [
+                *previous.get("history", []),
+                {key: value for key, value in previous.items() if key != "history"},
+            ]
+            if previous
+            else []
+        )
+        rate_limited = False
         try:
-            result = _retry(lambda question=case["question"]: traced_team(question))
+            result = _retry(
+                lambda question=case["question"]: traced_team(question),
+                stop_on_429=True,
+            )
             rows[case["id"]] = {
                 "question": case["question"],
                 "status": "completed",
@@ -239,7 +260,12 @@ def trace_ten(
                 "status": "error",
                 "error": f"{type(exc).__name__}: {exc}",
             }
+            rate_limited = isinstance(exc, APIStatusError) and exc.status_code == 429
+        if history:
+            rows[case["id"]]["history"] = history
         _save(output, rows)
+        if rate_limited:
+            return rows
         time.sleep(0.5)
     return rows
 
@@ -311,7 +337,10 @@ if __name__ == "__main__":
     parser.add_argument("--limit", type=int, default=10)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--case-id", action="append")
+    parser.add_argument("--retry-errors", action="store_true")
     args = parser.parse_args()
+    if args.retry_errors and not args.trace_ten:
+        parser.error("--retry-errors requires --trace-ten")
     if args.compare_graph:
         print(
             graph_summary(
@@ -331,7 +360,9 @@ if __name__ == "__main__":
     elif args.graph_summary:
         print(graph_summary(_load(RESULTS / "graph_comparison.json")))
     elif args.trace_ten:
-        print(f"Saved {len(trace_ten(args.limit))} traced cases")
+        print(
+            f"Saved {len(trace_ten(args.limit, retry_errors=args.retry_errors))} traced cases"
+        )
     elif args.upload_dataset:
         print(f"Uploaded dataset: {upload_dataset()}")
     else:

@@ -1321,3 +1321,22 @@ I added a small example-shape check to the existing verifier. It accepts a varia
 ### Testing and Results
 
 The two new offline tests first failed under the old verifier: valid placeholder examples were rejected, while the incomplete `poetry new --flat` prefix was accepted. After the change, both passed. The full suite passed **136 tests** with one ChromaDB dependency warning; Ruff lint and formatting checks for the two edited Python files passed. This is an offline verification result. I did not rerun the live question, and the saved blocked trace remains unchanged.
+
+## Part 5 — Manual Review of Q04 (Reduced Evaluation)
+
+**Question:** How can I disable Poetry plugins when running a command?
+
+The five-system comparison was started using a fixed ten-case sample, but only Q04 was executed across all five systems. Therefore, the results are preliminary and cannot support an overall system ranking.
+
+| System | Execution | Manual Review |
+|---|---|---|
+| Plain LLM | Completed | Produced an answer containing the expected command option, without documentation citations. |
+| RAG (k=3) | Completed | Included the correct `--no-plugins` option, but cited `plugins.md`, which did not establish support for the flag. |
+| Single Agent | Refused | False refusal caused by overly strict command verification. |
+| Single Agent (separate retry) | Completed | Produced a documentation-supported answer citing `cli.md` after the command-check correction. |
+| Multi-Agent Team | API error | No completed answer available for quality grading. |
+| Team without Reviewer | API error | No completed answer available for quality grading. |
+
+**Key findings:** The command verifier originally rejected a valid combination of a documented Poetry command and global option. After correction, the separate Single Agent retry succeeded. The RAG example illustrates that a plausible or factually correct command can still have insufficient supporting citations.
+
+**Limitations:** This is one manually examined normal question, not the required multi-case hand-grading sample. API errors were not counted as incorrect answers or valid refusals. Other selected cases, repeat experiments, and the full comparison remain incomplete.
