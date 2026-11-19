@@ -29,6 +29,7 @@ The project follows a step-by-step learning journey, starting with working with 
 | 7 | Semantic Search | Understand embeddings and search text by meaning |
 | 8 | Document Search | Explore document chunking, vector databases, and retrieval |
 | 9 | RAG Assistant | Combine document retrieval with an LLM to generate answers |
+| Final Task | Poetry Support Team | Use tools, structured answers, guardrails, and a four-agent review flow |
 
 Each module includes a short explanation, an interactive example, and points to observe while experimenting.
 
@@ -207,7 +208,15 @@ Check code quality:
 poetry run ruff check .
 ```
 
-**Latest reported local result:** 70 tests passed. Code-quality checks should be rerun after changes.
+To run the Support Team locally, configure `GROQ_API_KEY` and open the **Final Task · Support Team** page. The page builds the local Poetry documentation collection when needed. Offline tests cover its empty-question, answer-display, and error-message paths. Five live page questions and deployment are still pending.
+
+The fixed seed 42 evaluation sample contains six normal, two special, and two user-input injection cases. Its IDs and limitations are recorded in `final_task_notes.md`; the original 40-case dataset is unchanged. The evaluator saves each system separately and skips saved outcomes. An explicit `--retry-id Q04` writes a new result file for a saved error or refusal. Inspect saved results without API calls:
+
+```bash
+poetry run python -m scripts.final_task_summarize --sample-ten
+```
+
+**Verified local status:** 136 tests pass and `poetry run ruff check .` passes. The five-system sample has only Q04 attempted: Plain and RAG completed, Single Agent refused in its original run and completed in a separate retry, and Team plus Team without Reviewer had API errors. This is not an accuracy comparison. The full 40-case evaluation, hand grading, repeat experiment, five live page checks, and LangSmith work remain incomplete. Q05 has a completed Coordinator result and a separately saved successful LangGraph retry. Repository-wide Ruff formatting still reports 46 files; the targeted final-task files checked for this audit pass formatting.
 
 ## RAG Experiments and Evaluation
 

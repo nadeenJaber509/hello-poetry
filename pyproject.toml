@@ -17,7 +17,9 @@ dependencies = [
     "matplotlib (>=3.11.2,<4.0.0)",
     "transformers (>=5.0.0,<6.0.0)",
     "chromadb (>=1.5.9,<2.0.0)",
-    "pydantic (>=2.14.3,<3.0.0)"
+    "pydantic (>=2.14.3,<3.0.0)",
+    "langgraph (>=1.2.23,<2.0.0)",
+    "langsmith (>=0.15.0,<0.16.0)",
 ]
 
 [tool.poetry]

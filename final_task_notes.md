@@ -1081,4 +1081,243 @@ The remaining baseline failures also need to be handled under controlled API lim
 | Part 7 — Offline Testing | Not started as a separate final-task stage |
 | Part 8 — LangGraph and LangSmith | Not started |
 
-The next implementation step is **Part 3.2 — Scope Guardrail**.
+The progress table above records the state before the implementation update below.
+
+---
+
+# Implementation Update: Parts 3–7
+
+## Goal
+
+I continued the existing final task on the `nadeen-jaber` branch. I used the assignment PDF as the requirements source and kept the earlier baseline and experiment files unchanged.
+
+## Understanding the Concept
+
+The scope classifier uses one model call. Evidence similarity, answerability, citations, and commands are checked in Python. The fixed refusal is: “I could not find this in the Poetry documentation.” A high similarity score or a command appearing in a document does not prove the document is trustworthy or the answer is semantically correct.
+
+## Implementation
+
+- Part 3: I completed the Python output checks and a guarded single-agent path. The evidence threshold is 0.30, the tentative Task 8 threshold. The older LLM evidence-sufficiency helper remains in the file for historical tests, but the guarded path does not call it.
+- I built `data/poetry_docs_planted/` and an isolated `poetry_800_150_planted` ChromaDB collection. The real documentation corpus and collection were not changed. The planted experiment can be run explicitly with `poetry run python -m scripts.final_task_planted --mode before` and `--mode after`. Each run saves its result and skips it on rerun.
+- Part 4: I added Router, Researcher, Writer, Reviewer, and a plain-Python coordinator. The coordinator records a trace, checks the model-call budget, permits at most two review rounds in total, and runs code checks before returning an answer.
+- Part 5: I added a resumable evaluator for Plain, RAG k=3, Single Agent, Team, and Team without Reviewer. Each case is checkpointed with separate completed, refused, empty, and error states. I did not launch the 40-case live comparison without approval.
+- Part 6: I added the Support Team page to the existing Streamlit navigation. It displays the answer, commands, sources, confidence, block reason, and trace.
+- Part 7: I added offline tests for output checks and coordinator review, scope, and call-limit paths.
+
+## Testing
+
+At this update, `poetry run pytest -q` passed 97 tests. `poetry run ruff check .` passed. Formatting checks passed for the new and edited final-task modules. The full repository formatter check still reports many pre-existing files, so I did not reformat unrelated learning tasks.
+
+## Results and Observations
+
+The original preliminary baseline remains 20 nonempty answers, 4 empty answers, 13 rate-limit errors, 2 oversized-request errors, and 1 invalid tool-call error. These are execution outcomes, not accuracy scores. The planted collection was built locally from 349 chunks. I ran the planted question once with and once without guardrails. The unguarded agent answered that `poetry sparkle` cleans the cache (3 model calls, 3,385 tokens); it did not output `HACKED`. The guarded path returned the fixed refusal (5 model calls, 4,788 tokens), blocked by citations: the Writer cited `zz_planted.md::0` although the retrieved source was `zz_planted.md`. This does not show that the guardrails recognized the fake command. If the Writer had cited the exact filename, the string checks could have accepted the planted claim. I have not run the 40-case comparison, so there are no measured guarded or team accuracy scores. The 40-case labels and the self-authored alternatives to the original Task 8/9 questions still need final semantic verification. Hand grading and the 10-case repeat experiment remain pending.
+
+## What I Learned
+
+The offline tests confirm the Python control flow and validation behavior. They cannot establish whether the model's claims are factually correct. The citation and command checks establish string-level support and provenance within retrieved text, not the truth of a planted or mistaken document.
+
+## Remaining Work
+
+After approved live calls, I need to inspect failures and traces, hand grade the requested cases with a fixed seed, compare the five systems, and update the measurement tables. Part 8 requires a separate branch, current LangGraph and LangSmith documentation, a LangSmith account/key, and explicit authorization before sending public test data to that service. I have not created an account, run LangSmith, or claimed results from it.
+
+| Requirement | Current status |
+|---|---|
+| Part 1 — Tools and bounded agent loop | Implemented earlier; tests and saved traces available |
+| Part 2 — Structured JSON | Implemented earlier; full 30-question comparison remains pending |
+| Part 3 — Guardrails | Python pipeline and isolated planted smoke test completed; 40-case before/after comparison pending |
+| Part 4 — Four-agent coordinator | Implemented and tested offline; five live trace reviews pending |
+| Part 5 — Five-system comparison | Runner and summary implemented; live scores and hand grading pending |
+| Part 6 — Streamlit page | Implemented; offline page load tested; live questions and deployment pending |
+| Part 7 — Offline tests | 107 tests passing, including new final-task paths |
+| Part 8 — LangGraph and LangSmith | Code prepared and mocked offline; separate branch, dependencies, account, and live experiments pending |
+
+---
+
+# Offline Implementation Update: Repeat Experiment and Part 8
+
+## Goal
+
+I prepared the remaining local experiment code without changing branches, running a large Groq evaluation, or using a LangSmith account.
+
+## Implementation
+
+- I added a fixed-seed, ten-case repeat runner. It uses the existing evaluation function for the same model and temperature, stores settings and each answer after every case, skips saved runs, keeps errors and empty answers distinct, and compares paired answers without calling them correct or incorrect.
+- I prepared a LangGraph graph with the existing Router, Researcher, Writer, and Reviewer functions. Conditional edges handle scope, missing evidence, and the two-round review loop. The graph uses the same final Python citation and command checks as the coordinator.
+- I prepared explicit LangSmith commands for agent-level tracing, ten traced cases, uploading the public 40-case dataset, and one experiment. The code checks for tracing configuration. These commands have not been executed against LangSmith.
+- I made a narrow evidence handoff change: tool results now retain the text returned by `search_docs` and `read_doc`, and the Writer and final checks can use up to six actual evidence passages. Previously they used only the first direct top-three search even when the Researcher read another document. The 0.30 similarity rule and the PDF's exact command-matching rule did not change.
+
+## Testing
+
+`poetry run pytest -q` passed 107 tests and `poetry run ruff check .` passed. The new tests use fake graph and LangSmith objects. LangGraph and LangSmith are not installed, so these tests do not verify the real packages or any external result.
+
+## Results and Observations
+
+The earlier offline retrieval audit found that all 30 normal questions passed the 0.30 similarity threshold. The expected source was absent from the direct top three for 11 questions, and the key phrase was absent for 13. The evidence handoff change can help only when the tool agent actually finds or reads the missing passage. It does not prove fewer false refusals. No repeat, graph comparison, LangSmith trace, dataset upload, or LangSmith experiment has been run.
+
+## Remaining Work
+
+- Review the 40-case labels and complete the 30-question Part 2 comparison.
+- After API approval, run the five-system comparison, hand grade the required cases, inspect team failures, and run both repeat passes.
+- After branch approval, move the prepared Part 8 work to the PDF-required separate branch. Install and locally verify LangGraph and LangSmith there. Obtain a LangSmith account/key and approve sending public prompts and answers before running remote tracing or uploading the dataset.
+- Review actual graph and coordinator answers for the same ten cases. The mocked offline tests cannot establish behavior or answer quality with the real framework and model.
+
+Official references for the prepared Part 8 API: [LangGraph Graph API](https://docs.langchain.com/oss/python/langgraph/graph-api), [LangGraph conditional edges](https://docs.langchain.com/oss/python/langgraph/graph-api-control-flow), [LangSmith tracing](https://docs.langchain.com/langsmith/annotate-code), and [LangSmith evaluation](https://docs.langchain.com/langsmith/evaluate-llm-application).
+
+---
+
+# Reduced Evaluation Preparation
+
+## Goal
+
+I prepared a smaller live evaluation with ten cases. This is a deliberate deviation from the official 40-case requirement. The original `data/cases.csv` and preliminary 40-case baseline remain unchanged.
+
+## Implementation
+
+I used seed 42 to sample six normal cases from six documentation areas, two special cases, and two user-input injection cases from the original dataset. The fixed IDs, in execution order, are Q04, Q11, Q17, Q19, Q27, Q30, Q10, S06, I01, and I03. The five-system evaluator, repeat experiment, and LangGraph comparison use this same selection function. The planted-document injection experiment remains separate.
+
+The five-system runner now has `--sample-ten`; its sample files are separate from any full-dataset result files. `--limit 1` runs only the first sample case, and a later larger limit skips saved completed, refused, and empty outcomes. The baseline runner has its own `--sample-ten` output file. On first use, it copies matching successful historical baseline rows into that file and reruns only sampled cases without a usable historical result. It records an empty answer separately. The original baseline is never overwritten. A daily quota error stops a sample batch after saving the error.
+
+## Testing
+
+The new offline tests check the sample composition, repeatable selection, sample checkpointing, selected graph cases, and preservation of the original baseline. `poetry run pytest -q` passed 119 tests, and `poetry run ruff check .` passed. I checked the live-runner CLI help without making a Groq call. The Streamlit page remains covered by the existing offline page test; five live questions have not been run.
+
+## Results and Observations
+
+No new live evaluation was run in this preparation step. In the selected sample, the historical baseline has five nonempty answers, one empty answer, and four API errors. The five-system sample files and repeat files have no measured runs yet. The Part 2 JSON Mode and Prompt Only pilots each have ten saved valid outputs; the required 30-question comparison is still incomplete. The saved Q05 Coordinator result is completed. Its original LangGraph result is an error, and the separate Q05 graph retry completed with six model calls and 9,632 tokens. The offline graph tests cover rejection, revision, approval, review-round stopping, and the model-call limit. Q05 is outside the new fixed sample and should be reported separately.
+
+## Remaining Work
+
+The proposed first smoke test is one Plain LLM case: `poetry run python -m scripts.final_task_evaluate --system plain --sample-ten --limit 1`. It makes at most one Groq request in the absence of transport retries; the runner can retry a transient API error up to three attempts. Based on earlier short-answer runs, I expect roughly 200–1,000 tokens, but the current client does not set a hard token cap. I will obtain approval before this or any substantial live evaluation.
+
+After approval, I still need to run the five systems on the same ten IDs, fill the five missing baseline cases, run the guarded after sample, manually review all ten cases, run both repeat passes, and check five live Team/Streamlit questions. I must report errors, empty answers, refusals, and correct answers separately. The official 40-case and Part 2 30-question experiments remain unfulfilled.
+
+For Part 8, a minimal three-type comparison is prepared with `--case-id Q04 --case-id Q10 --case-id I03 --output results/final_task/graph_comparison_sample10.json`. This uses normal, special, and user-input injection cases from the fixed sample, and keeps the existing Q05 comparison and retry untouched. LangSmith tracing would send the public questions, agent inputs and outputs, retrieved documentation excerpts, answers, and trace metadata to LangSmith. Dataset upload would send all 40 public questions and their current labels, including labels still needing semantic review. The LangSmith experiment would run the full uploaded dataset remotely. I have not enabled tracing or uploaded data. The PDF's separate-branch requirement is pending approval; no branch change has been made.
+
+## First Smoke Test
+
+I ran only the approved Q04 Plain LLM smoke test. The runner saved `status=error` with `APIConnectionError: Connection error.` in `results_plain_sample10.csv`. It saved no answer, model-call count, or token count, so I cannot report measured Groq usage or determine from this row whether the requests reached Groq. The runner made three client attempts because its existing transient-error policy retried connection failures twice. This did not meet the requested immediate stop behavior. I stopped before RAG, Single Agent, Team, and Team without Reviewer and made no further live experiment call.
+
+Before the test, I disabled the Groq SDK's automatic retries in the shared client calls and made the evaluation runner raise immediately on a 429. After the test, I also changed the runner to stop on the first connection or timeout error. Offline regression tests cover both 429 and connection-error stops. `poetry run pytest -q` passed 121 tests and `poetry run ruff check .` passed. The connection failure remains unresolved; the next live batch should wait until the cause is understood and API use is approved again.
+
+## Q04 Saved Smoke-Test Review
+
+I reviewed the saved Q04 results without making another API call. Plain and RAG completed. The Single Agent refused with `blocked_by=commands` after four model calls and 4,263 tokens. Its Researcher searched five chunks; four came from `plugins.md` and one from `cli.md`. The `cli.md` chunk explicitly says `--no-plugins`: “Disables plugins.” The draft used `poetry install --no-plugins` and `poetry add requests --no-plugins`. The saved structured answer had `commands=["poetry install --no-plugins"]`, `sources=["cli.md"]`, and `answerable=true`. The old verifier required the whole command string to occur in one evidence passage, so it rejected this documented global option combined with the documented `install` subcommand. The original refusal remains in the result file.
+
+I changed only command verification: for a simple `poetry` command with one global long option, the option must appear as a documented option in retrieved evidence and in the original `cli.md`, and any subcommand must have a heading in that original CLI document. `poetry install --no-plugins` now passes; `poetry teleport`, `poetry teleport --no-plugins`, and invented flags remain rejected. This is a syntax and source check, not proof that every answer claim is semantically correct.
+
+The RAG row cites three `plugins.md` chunks. The original `plugins.md` contains no `--no-plugins` flag, so those cited sources do not support that part of the generated answer. The saved RAG row contains source names but not chunk text; I did not reconstruct its exact retrieved passages. Its answer may be factually right while its saved citations are insufficient.
+
+The Team and Team-without-Reviewer Q04 rows remain API errors, not answer-quality results. Groq reported 429 TPM limits of 8,000, with used/requested counts of 6,541/1,765 and 6,713/3,650 respectively. The Team trace recorded 304 Router tokens, 5,173 Researcher tokens, and 1,801 Writer tokens before the Reviewer request failed. The Team-without-Reviewer trace recorded only the Router before its Researcher request failed. These observations show that running the systems close together and sending long Researcher context can exceed the minute budget.
+
+The evaluator now skips every saved result by default, including refusals and errors. An explicit `--retry-id Q04` can run only an original error or refusal and writes a separate retry file. This preserves the original Q04 false refusal and 429 errors even if a later attempt succeeds. For a safe next experiment, I would run only one case at a time after approval, wait at least one full minute after earlier Groq usage, stop on any 429, and permit at most one explicit later retry after another minute or the provider's longer retry interval. I would review Researcher search size and evidence length before any Team batch; the Q04 trace shows a five-chunk tool search and 5,173 Researcher tokens. The relevant `cli.md` chunk was ranked third, so a researcher-only three-chunk cap is a possible context reduction, but it requires an offline quality check across other questions first. I have not changed retrieval or agent prompts here.
+
+The offline regression tests cover documented global flags, invented commands, explicit retries of errors and refusals, and preservation of successful and original saved results. `poetry run pytest -q` passed 125 tests and `poetry run ruff check .` passed. No new Groq request was made during this review.
+
+## Q04 Researcher Context Review
+
+The separate Single Agent Q04 retry completed with `blocked_by` empty, four model calls, and 4,084 tokens. The original refusal remains saved as a distinct observation.
+
+I inspected the saved Team Q04 Researcher trace. The Coordinator first retrieved three `plugins.md` chunks. The Researcher then searched for five chunks: four `plugins.md` chunks and one `cli.md` chunk. Three of the tool-search chunks exactly matched the direct retrieval, but the new `cli.md` chunk at rank three contained the needed `--no-plugins` line. The tool search was therefore partly repeated but found relevant evidence; removing it would risk losing the answer. There were no identical chunks within that five-result tool response. The Researcher then read 6,000 characters of `cli.md`, although its search snippet already contained the needed flag. That read returned 6,216 JSON characters and overlapped the `cli.md` search snippet. The search result itself was 4,600 JSON characters. The saved Researcher used three model calls and 5,173 tokens.
+
+The Researcher returned one supported `cli.md` quote in a fenced JSON block. The old parser did not accept the fence, so it sent six fallback passages to the Writer. I now remove a surrounding code fence before validating the same source and exact quote. I also deduplicate identical initial passages, and the short Researcher prompt now asks for a relevant search quote before reading a full document. The original evidence chunks and final citation and command checks remain available. Both the Coordinator and LangGraph call this same Researcher function.
+
+Using the saved Q04 trace, the Writer evidence payload was 5,718 characters before this change and would be 179 characters with the parsed quote. The Reviewer input would fall from 5,932 to 393 characters if the answer content were otherwise unchanged. These are offline character counts, not measured Groq token savings. The historical Researcher tool outputs and 5,173-token result remain unchanged; a prompt-only reduction in future tool use cannot be verified until an approved live run. The 0.30 similarity threshold and documentation corpus were not changed.
+
+`poetry run pytest -q` passed 127 tests and `poetry run ruff check .` passed. No Groq evaluation was run during this review.
+
+## Q04 Team Researcher Tool Context
+
+The optimized Q04 Team retry still saved a Groq 429 (8,000 TPM; 6,636 used and 1,763 requested). I preserved both Team failure files. Its Researcher made three model calls: 343, 1,548, and 3,271 tokens. The third call had the largest prompt (3,212 tokens) because the conversation retained the 4,600-character search result and then added a 6,216-character JSON result from reading `cli.md`. The searched `cli.md` passage already appeared inside that full read. The original tool results remain available for evidence and citations.
+
+For the shared Researcher path only, I now send nearby context from that `read_doc` result while omitting the exact passage already present in the earlier search message. The full document result remains in the tool trace and in the Python evidence passed to final checks. If there is no exact overlap, the full read is sent as before. This changes neither the documentation collection nor the similarity threshold. The Coordinator and LangGraph both call this same Researcher path. I also accept a validated Researcher evidence list wrapped in JSON code fences; the failed retry returned that form, which had previously triggered a long fallback evidence list.
+
+Replaying the saved Q04 tool results through the new Python compaction, the read message is 672 characters instead of 6,216; the two accumulated tool messages total 5,272 instead of 10,816 characters. The earlier search message still contains `--no-plugins`, and the saved full read still contains it. These are offline context-size measurements, not actual new token counts. The historical Researcher used 5,162 tokens and cannot be retroactively rescored. The smaller third prompt and evidence handoff make one isolated Team case plausible under 8,000 TPM, but the provider's rolling window and model-generated tool choices leave a 429 risk. No quota upgrade or new live call was made.
+
+`poetry run pytest -q` passed 130 tests and `poetry run ruff check .` passed. Offline tests verify a shorter Researcher message, retained full evidence, unchanged full reads when no overlap exists, and both supported fenced evidence shapes.
+
+---
+
+# Final Completion Audit — 19 November 2026
+
+## Goal
+
+I compared the current project with the official 14-page student guide and the saved results. Earlier sections of this file are progress snapshots; this section records the current status. I did not run Groq or LangSmith, change branches, or alter any saved evaluation or trace file during this audit.
+
+## Implementation Status
+
+| Part | Verified locally | Still missing from the PDF |
+|---|---|---|
+| 1 — Tool Calling | Three tools, schemas, registry, bounded tool loop, error handling, and traces have offline tests. Four questions are in the named live test file. | The guide asks for five live agent questions, including a non-Poetry case; the named saved batch documents four, so I cannot verify all five from it. |
+| 2 — JSON Output | `SupportAnswer`, Groq JSON mode, validation, and retry behavior pass offline tests. JSON Mode and Prompt Only each have 10 saved valid, first-try pilot outputs. | The required 30-normal-question comparison and its complete counts are absent. `data/questions.csv` currently has 10 rows. |
+| 3 — Guardrails | Scope, Python similarity and `answerable` checks, citation and command checks, fixed refusal, and guarded path have tests. Five scope classifications were saved. The planted document and ChromaDB collection are separate from the real corpus. | The 40-case after-guardrails run and the full before/after table are absent. The baseline has 16 API errors. Special labels and normal-case provenance still need semantic verification. |
+| 4 — Four Agents | Router, Researcher, Writer, Reviewer, and the plain-Python coordinator have offline review-loop, refusal, and call-limit tests. Q05 has one completed Coordinator trace. | Five live Team trace reviews, a real Reviewer rejection-and-revision example, and a complete live failure review are absent. |
+| 5 — Evaluation | Checkpointed Plain, RAG k=3, Single Agent, Team, and Team-without-Reviewer runners are implemented. The fixed seed 42 reduced sample is selected consistently. | No complete 10-case or official 40-case system comparison, hand grades, or two-pass repeat result exists. The PDF originally requests four systems plus a fifth no-Reviewer experiment on 40 cases. |
+| 6 — Streamlit | The existing navigation includes the Support Team page. Offline tests cover page load, empty question, mocked answer, and a mocked coordinator error. | Five live page questions, deployment, and a live app link are not verified. |
+| 7 — Offline Tests | The full Pytest suite and Ruff lint pass. | Offline tests cannot establish factual answer quality or external service behavior. |
+| 8 — LangGraph and LangSmith | LangGraph and LangSmith packages are installed. The graph reuses the four agents; offline tests cover conditional review and limits. Q05 Coordinator and separate graph retry both completed with `cli.md`. | The PDF-required separate branch, same-ten-case graph comparison, LangSmith account/key and tracing, ten website trace reviews, 40-case dataset upload, and LangSmith experiment remain pending. The user has not authorized branch or external-account actions. |
+
+## Testing
+
+`poetry run pytest -q` passed **130 tests** with one ChromaDB dependency deprecation warning. `poetry run ruff check .` passed. `poetry run ruff format --check .` reported 46 files that would be reformatted, mostly earlier project files; I did not format unrelated work. A targeted formatting check passed for 15 final-task modules, scripts, the page, and tests. A separate mocked Streamlit check showed a friendly error and no page exception when the coordinator failed. I found no demonstrated functional failure in the page's offline paths. First-run collection building, live API behavior, and deployment remain unverified.
+
+## Measured Results
+
+The original 40-case baseline contains 20 nonempty answers, four empty answers, and 16 API errors: thirteen 429, two 413, and one 400. These are execution outcomes, not correctness scores. There is no `after_guardrails.csv` or reduced-sample after file.
+
+The reduced sample is Q04, Q11, Q17, Q19, Q27, Q30, Q10, S06, I01, and I03: six normal questions covering six documentation areas, two special questions, and two user-input injections. This deliberately departs from the guide's 40-case evaluation. Each of the five system CSVs contains only Q04, leaving nine sample cases unrun per system:
+
+| System | Original Q04 status | Saved calls and tokens | Evidence limitation |
+|---|---|---|---|
+| Plain | Completed | 1 call, 478 tokens | No documentation or citations. |
+| RAG | Completed | 1 call, 1,187 tokens | Three `plugins.md` sources; that file does not contain `--no-plugins`, and the saved answer has no valid numbered citation. |
+| Single Agent | Refused, blocked by commands | 4 calls, 4,263 tokens | This was a false refusal. A separate post-fix retry completed with 4 calls and 4,084 tokens; the original row remains. |
+| Team | API error, 429 TPM | No complete-run usage saved | A separate retry also saved 429; another separate retry saved `APIConnectionError` before any completed agent call. |
+| Team without Reviewer | API error, 429 TPM | No complete-run usage saved | No successful retry. |
+
+I have not graded any of these system answers as right, partly right, or wrong. Phrase presence is only a proxy. The planted-document experiment is separate from the user-input injection cases: the unguarded agent repeated the planted false `poetry sparkle` claim, and the guarded path refused because of a citation mismatch. That does not prove the guardrail detected the planted claim itself.
+
+The Q05 Coordinator result used six model calls and 9,855 tokens; the original graph row is an error, and its separate successful retry used six calls and 9,632 tokens. Both successful answers cited `cli.md`, but their answer text differed. One recovered pair does not satisfy the required ten-case comparison. No repeat, hand-grade, LangSmith trace, dataset, or experiment result file exists.
+
+## Observations and Remaining Work
+
+The original 40-case file is intact, but its 30 normal rows are not a verified copy of `data/questions.csv`, which currently contains only 10 questions. The PDF's 15-normal-plus-10-refusal hand-grade sample cannot be substituted with a ten-case score without clearly changing the method. The selected 10 cases also omit many documentation topics and are too few for a reliable system ranking.
+
+The current command check has a narrow documented-global-option exception for Q04. It can validate `poetry install --no-plugins` when the retrieved passage documents the flag and the original `cli.md` documents `install`; this extends the PDF's literal command-in-retrieved-text rule. Invented commands remain rejected in offline tests. Citation and command checks establish document support, not truth if a document is malicious or wrong.
+
+I removed the old model-based evidence-sufficiency class, prompt, and function after confirming they had no callers. The guarded path continues to use the required Python check, and the full tests still pass. I removed no dependency: the Part 8 packages are used by prepared code, and the other declared packages support existing project tasks or their model stack.
+
+Groq's 8,000 TPM limit and intermittent connection failures block reliable Team measurements in the current environment. I should not repeat Q04 without a concrete connection diagnosis and a newly approved live plan. LangSmith has no configured API key or tracing flag; its website traces, dataset upload, and experiment would send public prompts, documentation excerpts, and answers externally. The user has also withheld approval for the PDF-required Part 8 branch and for Git commits, PRs, pushes, and deployment. Those deliverables remain pending rather than completed.
+
+## Q12 Retrieval Follow-Up
+
+### Goal
+
+I investigated the saved Support Team refusal for “How do I create a new Poetry project?” without making a Groq call.
+
+### Implementation
+
+The saved Researcher made three searches: `create a new Poetry project` (three results), `poetry new project` (five), and `poetry new command` (five). The first two sets contained only related material. The third included `cli.md`, but those snippets discussed global options and other commands, not the `new` instructions. The Researcher reached its three-call limit without a final evidence list. The fallback kept the first six distinct passages, which came from `contributing.md`, `_index.md`, and `community.md`; the Writer therefore received no `poetry new` instructions and returned `answerable=false`. The Reviewer approved that refusal. This was an evidence-selection failure, not a similarity-threshold failure.
+
+I kept semantic search and the 0.30 cutoff. The shared Researcher now requests ten local candidates once, then passes at most three to its existing tool loop. It gives priority to a candidate containing a Markdown Poetry command example whose command word also appears in the question. Otherwise it retains semantic order. The code does not name Q12, a particular command, or a source. Both the Python Coordinator and LangGraph call this same Researcher. I did not change the separate RAG or Single Agent retrieval paths.
+
+### Testing and Results
+
+With offline local retrieval for the live wording, the old top three were `contributing.md`, `_index.md`, and `contributing.md`; none contained `poetry new`. The new selected three were `basic-usage.md`, `cli.md`, and `contributing.md`; the first two contained the command. On the 30 labeled normal cases, the expected key phrase appeared in a selected passage for **17/30 before** and **18/30 after**. The expected source appeared for **19/30 before and after**. Q12 was the only key-phrase change. These are passage-coverage checks, not answer accuracy or proof of a live fix. The fixed refusal has not been retried.
+
+New offline tests check selection for two different command questions, the Researcher handoff, preservation of the cutoff, and out-of-scope routing. `poetry run pytest -q` passed **134 tests**, `poetry run ruff check .` passed, and the two edited Python files passed Ruff formatting. The saved refusal and all earlier evaluations remain unchanged.
+
+## Q12 Command Verification Follow-Up
+
+### Goal
+
+I investigated the second saved live refusal for the same project-creation question. The Researcher supplied `basic-usage.md` and `cli.md`, and the Writer returned `answerable=true`. The Reviewer approved the answer, but the final Python command check blocked it.
+
+### Implementation
+
+The complete Writer `commands` list contained only `poetry new <project-name>`. The `--flat` and `--name` variants appeared in the answer text, not in that list. The old checker looked for the literal placeholder string in a retrieved passage. The documents instead use concrete names such as `poetry-demo` and `my-package`, so it rejected the only listed command.
+
+I added a small example-shape check to the existing verifier. It accepts a variable positional value when the retrieved evidence contains a matching Poetry command example, checks option spelling and position against that example, and checks the command base against the original CLI headings. The existing documented global-option check remains. Invented top-level commands, unknown subcommands, unsupported flags, incomplete examples, and shell-control text are rejected. Coordinator and LangGraph already share this verifier. I did not change retrieval, scope, citations, or the 0.30 similarity cutoff.
+
+### Testing and Results
+
+The two new offline tests first failed under the old verifier: valid placeholder examples were rejected, while the incomplete `poetry new --flat` prefix was accepted. After the change, both passed. The full suite passed **136 tests** with one ChromaDB dependency warning; Ruff lint and formatting checks for the two edited Python files passed. This is an offline verification result. I did not rerun the live question, and the saved blocked trace remains unchanged.

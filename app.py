@@ -550,6 +550,12 @@ rag_assistant = st.Page(
     icon=":material/smart_toy:",
 )
 
+support_team = st.Page(
+    "pages/7_Support_Team.py",
+    title="Final Task · Support Team",
+    icon=":material/support_agent:",
+)
+
 PAGE_LINKS = {
     "data_exploration": data_exploration,
     "data_cleaning": data_cleaning,
@@ -558,6 +564,7 @@ PAGE_LINKS = {
     "semantic_search": semantic_search,
     "document_search": document_search,
     "rag_assistant": rag_assistant,
+    "support_team": support_team,
 }
 
 pages = {
@@ -572,6 +579,7 @@ pages = {
         semantic_search,
         document_search,
         rag_assistant,
+        support_team,
     ],
 }
 

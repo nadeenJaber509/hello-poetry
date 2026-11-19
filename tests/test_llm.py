@@ -55,7 +55,7 @@ def test_ask_llm_without_internet():
     assert parse_label(answer) == "positive"
 
     mock_groq.assert_called_once_with(
-        api_key="fake-test-key"
+        api_key="fake-test-key", max_retries=0
     )
 
     fake_client.chat.completions.create.assert_called_once_with(

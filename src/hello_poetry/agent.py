@@ -1,4 +1,3 @@
-
 """Plain Python tool-calling agent for Poetry documentation."""
 
 import inspect
@@ -50,6 +49,93 @@ def save_trace(trace):
     return path
 
 
+def evidence_from_tools(initial_chunks, tool_results, max_chunks=6):
+    """Keep a bounded set of passages actually retrieved or read by tools."""
+    chunks = []
+    seen = set()
+    for chunk in initial_chunks:
+        key = (chunk.get("source"), chunk.get("text"))
+        if key not in seen:
+            chunks.append(chunk)
+            seen.add(key)
+    # Keep explicitly read documents when the bounded evidence list fills up.
+    ordered = sorted(tool_results, key=lambda item: item.get("tool") != "read_doc")
+    for item in ordered:
+        if str(item.get("result", "")).startswith("Error:"):
+            continue
+        try:
+            value = json.loads(item["result"])
+            if item["tool"] == "read_doc":
+                source = json.loads(item["arguments"])["source"]
+                candidates = [{"source": source, "text": value, "similarity": 0.0}]
+            elif item["tool"] == "search_docs":
+                candidates = value
+            else:
+                continue
+        except KeyError, TypeError, ValueError:
+            continue
+        if not isinstance(candidates, list):
+            continue
+        for candidate in candidates:
+            if not isinstance(candidate, dict):
+                continue
+            source, passage = candidate.get("source"), candidate.get("text")
+            if (
+                not isinstance(source, str)
+                or not isinstance(passage, str)
+                or not passage
+            ):
+                continue
+            key = (source, passage)
+            if key not in seen:
+                chunks.append(candidate)
+                seen.add(key)
+            if len(chunks) >= max_chunks:
+                return chunks[:max_chunks]
+    return chunks[:max_chunks]
+
+
+def _researcher_read_excerpt(name, arguments, result, earlier_results):
+    """Return nearby read text when a prior search already supplied its passage."""
+    if name != "read_doc" or result.startswith("Error:"):
+        return result
+    try:
+        source = json.loads(arguments)["source"]
+        document = json.loads(result)
+    except KeyError, TypeError, ValueError:
+        return result
+    if not isinstance(document, str):
+        return result
+    for item in earlier_results:
+        if item["tool"] != "search_docs":
+            continue
+        try:
+            chunks = json.loads(item["result"])
+        except TypeError, ValueError:
+            continue
+        if not isinstance(chunks, list):
+            continue
+        for chunk in chunks:
+            if not isinstance(chunk, dict) or chunk.get("source") != source:
+                continue
+            passage = chunk.get("text")
+            if not isinstance(passage, str) or not passage:
+                continue
+            position = document.find(passage)
+            if position < 0:
+                continue
+            start = max(0, position - 300)
+            end = min(len(document), position + len(passage) + 300)
+            if end - start < len(document):
+                nearby = (
+                    document[start:position]
+                    + f"\n[Previously retrieved {source} passage omitted]\n"
+                    + document[position + len(passage) : end]
+                )
+                return json.dumps(nearby, ensure_ascii=False)
+    return result
+
+
 def run_agent(
     question,
     system_prompt,
@@ -57,6 +143,7 @@ def run_agent(
     tool_functions,
     model,
     max_steps=5,
+    compact_read_doc=False,
 ):
     """Run a bounded LLM/tool loop and return its trace."""
     if max_steps < 1:
@@ -71,6 +158,7 @@ def run_agent(
     ]
 
     steps = []
+    tool_results = []
     responses = []
     total_tokens = 0
     final_answer = None
@@ -102,33 +190,37 @@ def run_agent(
                     final_answer = content
                     break
 
-                messages.append({
-                    "role": "assistant",
-                    "content": (
-                        "No final answer was generated. "
-                        "Please provide an answer based on the "
-                        "available evidence, or state that the "
-                        "documentation does not support an answer."
-                    ),
-                })
+                messages.append(
+                    {
+                        "role": "assistant",
+                        "content": (
+                            "No final answer was generated. "
+                            "Please provide an answer based on the "
+                            "available evidence, or state that the "
+                            "documentation does not support an answer."
+                        ),
+                    }
+                )
                 continue
 
             # Add the model's tool requests to the conversation.
-            messages.append({
-                "role": "assistant",
-                "content": message.content,
-                "tool_calls": [
-                    {
-                        "id": call.id,
-                        "type": "function",
-                        "function": {
-                            "name": call.function.name,
-                            "arguments": call.function.arguments,
-                        },
-                    }
-                    for call in tool_calls
-                ],
-            })
+            messages.append(
+                {
+                    "role": "assistant",
+                    "content": message.content,
+                    "tool_calls": [
+                        {
+                            "id": call.id,
+                            "type": "function",
+                            "function": {
+                                "name": call.function.name,
+                                "arguments": call.function.arguments,
+                            },
+                        }
+                        for call in tool_calls
+                    ],
+                }
+            )
 
             for call in tool_calls:
                 tool_start = time.perf_counter()
@@ -140,21 +232,33 @@ def run_agent(
                     arguments,
                     tool_functions,
                 )
+                message_result = (
+                    _researcher_read_excerpt(name, arguments, result, tool_results)
+                    if compact_read_doc
+                    else result
+                )
+                tool_results.append(
+                    {"tool": name, "arguments": arguments, "result": result}
+                )
 
                 elapsed = time.perf_counter() - tool_start
 
-                steps.append({
-                    "tool": name,
-                    "arguments": arguments,
-                    "result": result[:500],
-                    "seconds": round(elapsed, 3),
-                })
+                steps.append(
+                    {
+                        "tool": name,
+                        "arguments": arguments,
+                        "result": result[:500],
+                        "seconds": round(elapsed, 3),
+                    }
+                )
 
-                messages.append({
-                    "role": "tool",
-                    "tool_call_id": call.id,
-                    "content": result,
-                })
+                messages.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": call.id,
+                        "content": message_result,
+                    }
+                )
 
         else:
             stopped_by_limit = True
@@ -166,6 +270,7 @@ def run_agent(
             "question": question,
             "final_answer": final_answer,
             "steps": steps,
+            "tool_results": tool_results,
             "total_tokens": total_tokens,
             "total_seconds": total_seconds,
             "model_calls": len(responses),
@@ -178,6 +283,7 @@ def run_agent(
     return {
         "final_answer": final_answer,
         "steps": steps,
+        "tool_results": tool_results,
         "total_tokens": total_tokens,
         "total_seconds": total_seconds,
         "model_calls": len(responses),

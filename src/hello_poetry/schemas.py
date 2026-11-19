@@ -1,4 +1,3 @@
-
 """Structured answer schema and JSON validation for Poetry support."""
 
 import json
@@ -7,13 +6,14 @@ from pathlib import Path
 from typing import Literal
 from uuid import uuid4
 
-from pydantic import BaseModel, ConfigDict, StrictBool, ValidationError
+from pydantic import BaseModel, ConfigDict, PrivateAttr, StrictBool, ValidationError
 
 from hello_poetry.llm import chat_json
 
 # --------------------------------------------------
 # 1. Structured answer schema
 # --------------------------------------------------
+
 
 class SupportAnswer(BaseModel):
     """Validated answer returned by the Poetry support system."""
@@ -25,6 +25,7 @@ class SupportAnswer(BaseModel):
     commands: list[str]
     sources: list[str]
     confidence: Literal["low", "medium", "high"]
+    _total_tokens: int = PrivateAttr(default=0)
 
 
 # --------------------------------------------------
@@ -33,17 +34,13 @@ class SupportAnswer(BaseModel):
 
 ROOT = Path(__file__).resolve().parents[2]
 
-RESULTS_DIR = (
-    ROOT
-    / "results"
-    / "final_task"
-    / "structured_runs"
-)
+RESULTS_DIR = ROOT / "results" / "final_task" / "structured_runs"
 
 
 # --------------------------------------------------
 # 3. Structured answer with validation and retries
 # --------------------------------------------------
+
 
 def get_structured_answer(
     messages,
@@ -80,16 +77,20 @@ def get_structured_answer(
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
     run_path = RESULTS_DIR / f"{uuid4().hex}.jsonl"
+    total_tokens = 0
 
     # Initial attempt + max_retries additional attempts.
     for attempt in range(max_retries + 1):
-
         # Call Groq using the selected mode.
         response = chat_json(
             conversation,
             model,
             json_mode=json_mode,
         )
+        usage = getattr(response, "usage", None)
+        tokens = getattr(usage, "total_tokens", 0)
+        if isinstance(tokens, int):
+            total_tokens += tokens
 
         content = response.choices[0].message.content or ""
 
@@ -103,19 +104,17 @@ def get_structured_answer(
         }
 
         with run_path.open("a", encoding="utf-8") as file:
-            file.write(
-                json.dumps(record, ensure_ascii=False) + "\n"
-            )
+            file.write(json.dumps(record, ensure_ascii=False) + "\n")
 
         # Validate the response using Pydantic.
         try:
             answer = SupportAnswer.model_validate_json(content)
+            answer._total_tokens = total_tokens
 
             # Return validated answer and retries used.
             return answer, attempt
 
         except ValidationError as error:
-
             # No more retries available.
             if attempt == max_retries:
                 raise ValueError(
@@ -144,6 +143,4 @@ def get_structured_answer(
                 }
             )
 
-    raise RuntimeError(
-        "Unexpected end of structured answer loop."
-    )
+    raise RuntimeError("Unexpected end of structured answer loop.")

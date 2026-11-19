@@ -1,4 +1,3 @@
-
 """Build grounded prompts for the Poetry RAG chatbot."""
 
 SYSTEM_PROMPT = (
@@ -12,15 +11,17 @@ from functools import lru_cache
 
 from sentence_transformers import SentenceTransformer
 
-from hello_poetry.llm import ask_llm
+from hello_poetry.llm import ask_llm, ask_llm_with_usage
 from hello_poetry.store import query_collection
 
 MODEL_NAME = "openai/gpt-oss-20b"
 EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
 
+
 @lru_cache(maxsize=1)
 def get_embedding_model():
     return SentenceTransformer(EMBEDDING_MODEL_NAME)
+
 
 def format_sources(results: list[dict]) -> str:
     """Format retrieved chunks as numbered sources."""
@@ -47,10 +48,7 @@ def build_messages(
 
     sources_text = format_sources(results)
 
-    user_message = (
-        f"Sources:\n{sources_text}\n\n"
-        f"Question: {question}"
-    )
+    user_message = f"Sources:\n{sources_text}\n\nQuestion: {question}"
 
     return SYSTEM_PROMPT, user_message
 
@@ -59,6 +57,7 @@ def answer_question(
     question: str,
     collection_name: str,
     k: int = 3,
+    include_usage: bool = False,
 ) -> dict:
     """Retrieve relevant chunks and generate a grounded answer."""
 
@@ -86,26 +85,31 @@ def answer_question(
         return {
             "answer": "No relevant documentation was found.",
             "sources": [],
-            "prompt": (
-                f"SYSTEM:\n{system_prompt}\n\n"
-                f"USER:\n{user_message}"
-            ),
+            "tokens": 0,
+            "model_calls": 0,
+            "prompt": (f"SYSTEM:\n{system_prompt}\n\nUSER:\n{user_message}"),
         }
 
-    answer = ask_llm(
-        system_prompt=system_prompt,
-        user_message=user_message,
-        model=MODEL_NAME,
-        temperature=0,
-    )
+    if include_usage:
+        answer, tokens = ask_llm_with_usage(
+            system_prompt=system_prompt,
+            user_message=user_message,
+            model=MODEL_NAME,
+            temperature=0,
+        )
+    else:
+        answer = ask_llm(
+            system_prompt=system_prompt,
+            user_message=user_message,
+            model=MODEL_NAME,
+            temperature=0,
+        )
+        tokens = None
 
     return {
         "answer": answer,
+        "tokens": tokens,
+        "model_calls": 1,
         "sources": results,
-        "prompt": (
-            f"SYSTEM:\n{system_prompt}\n\n"
-            f"USER:\n{user_message}"
-        ),
+        "prompt": (f"SYSTEM:\n{system_prompt}\n\nUSER:\n{user_message}"),
     }
-
-

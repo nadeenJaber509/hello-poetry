@@ -61,9 +61,9 @@ def read_csv(path):
         return list(csv.DictReader(file))
 
 
-def save_results(rows):
+def save_results(rows, output=OUTPUT_FILE):
     """Atomically save all completed and failed results."""
-    OUTPUT_FILE.parent.mkdir(
+    output.parent.mkdir(
         parents=True,
         exist_ok=True,
     )
@@ -75,7 +75,7 @@ def save_results(rows):
             mode="w",
             newline="",
             encoding="utf-8",
-            dir=OUTPUT_FILE.parent,
+            dir=output.parent,
             prefix="baseline_",
             suffix=".tmp",
             delete=False,
@@ -91,7 +91,7 @@ def save_results(rows):
             file.flush()
             os.fsync(file.fileno())
 
-        os.replace(temp_path, OUTPUT_FILE)
+        os.replace(temp_path, output)
 
     finally:
         if temp_path is not None:
@@ -128,7 +128,7 @@ def evaluate_case(case, model, max_steps):
             ensure_ascii=False,
         ),
         "trace_path": result["trace_path"],
-        "status": "completed",
+        "status": "completed" if result["final_answer"] else "empty",
         "error": "",
     }
 
@@ -152,11 +152,14 @@ def main():
         "--model",
         default=DEFAULT_MODEL,
     )
+    parser.add_argument("--sample-ten", action="store_true")
 
     args = parser.parse_args()
 
     if args.limit is not None and args.limit < 1:
         parser.error("--limit must be at least 1")
+    if args.sample_ten and (args.model != DEFAULT_MODEL or args.max_steps != 5):
+        parser.error("The saved sample baseline uses the default model and five steps")
 
     cases = read_csv(CASES_FILE)
 
@@ -165,12 +168,35 @@ def main():
             f"Expected 40 cases, found {len(cases)}"
         )
 
-    existing = read_csv(OUTPUT_FILE)
+    output = (
+        OUTPUT_FILE.with_name("before_guardrails_sample10.csv")
+        if args.sample_ten
+        else OUTPUT_FILE
+    )
+    if args.sample_ten:
+        from scripts.final_task_repeat import selected_cases
+
+        cases = selected_cases(CASES_FILE)
+    existing = read_csv(output)
+    if args.sample_ten and not existing:
+        original = {row["id"]: row for row in read_csv(OUTPUT_FILE)}
+        for case in cases:
+            saved = original.get(case["id"])
+            if saved and saved["status"] == "completed":
+                if saved["question"] != case["question"]:
+                    raise ValueError(f"Changed baseline question for {case['id']}")
+                existing.append(
+                    {
+                        **saved,
+                        "status": "completed" if saved["final_answer"].strip() else "empty",
+                    }
+                )
+        save_results(existing, output)
 
     completed = {
         row["id"]
         for row in existing
-        if row["status"] == "completed"
+        if row["status"] in {"completed", "empty"}
     }
 
     results_by_id = {
@@ -238,7 +264,7 @@ def main():
             if row["id"] in results_by_id
         ]
 
-        save_results(ordered_results)
+        save_results(ordered_results, output)
 
         print(
             f"Status: {result['status']}"
@@ -254,8 +280,13 @@ def main():
             )
         else:
             print("Error:", result["error"])
+            if "429" in result["error"] and any(
+                term in result["error"].lower()
+                for term in ("daily", "per day", "tpd", "rpd")
+            ):
+                break
 
-    final_results = read_csv(OUTPUT_FILE)
+    final_results = read_csv(output)
     counts = Counter(
         row["status"] for row in final_results
     )
@@ -263,8 +294,8 @@ def main():
     print("\n=== BASELINE SUMMARY ===")
     print("Completed:", counts["completed"])
     print("Errors:", counts["error"])
-    print("Remaining:", len(cases) - counts["completed"])
-    print("Saved:", OUTPUT_FILE)
+    print("Remaining:", len(cases) - counts["completed"] - counts["empty"])
+    print("Saved:", output)
 
 
 if __name__ == "__main__":
