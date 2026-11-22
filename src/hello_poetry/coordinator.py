@@ -93,18 +93,12 @@ def answer_with_team(
                         blocked_by = "evidence"
                     elif verify_citations(
                         answer,
-                        [
-                            c["source"]
-                            for c in state.get("evidence_chunks", state["chunks"])
-                        ],
+                        [item["source"] for item in state["evidence"]],
                     ):
                         blocked_by = "citations"
                     elif verify_commands(
                         answer,
-                        [
-                            c["text"]
-                            for c in state.get("evidence_chunks", state["chunks"])
-                        ],
+                        [item["quote"] for item in state["evidence"]],
                     ):
                         blocked_by = "commands"
                     break

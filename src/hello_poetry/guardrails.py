@@ -171,13 +171,15 @@ def verify_commands(answer, retrieved_texts: list[str]) -> list[str]:
     examples = []
     for text in retrieved_texts:
         blocks = re.findall(
-            r"```(?:bash|sh|shell|console)?\n(.*?)```", text.casefold(), re.DOTALL
+            r"```(?:bash|sh|shell|console)\n(.*?)(?:```|\Z)",
+            text.casefold(),
+            re.DOTALL,
         )
         for block in blocks:
             examples.extend(
-                line.strip().split()
+                line.strip().removeprefix("$ ").split()
                 for line in block.splitlines()
-                if line.strip().startswith("poetry ")
+                if line.strip().removeprefix("$ ").startswith("poetry ")
             )
 
     def documented_example(command: str) -> bool:

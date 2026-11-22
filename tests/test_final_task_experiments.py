@@ -276,6 +276,7 @@ def test_graph_uses_conditional_review_loop_and_read_evidence(tmp_path):
             *state["chunks"],
             {"source": "b.md", "text": "poetry add flask"},
         ]
+        state["evidence"] = [{"source": "b.md", "quote": "poetry add flask"}]
         return advance(state, "researcher")
 
     def writer(state):
@@ -330,6 +331,28 @@ def test_graph_uses_conditional_review_loop_and_read_evidence(tmp_path):
     ]
     assert writer_feedback == [[], ["Check the command"]]
     assert reviewed_answers == ["Draft needs review", "Use poetry add flask"]
+
+    def researcher_omitting_cited_source(state):
+        state = researcher(state)
+        state["evidence"] = [{"source": "a.md", "quote": "related"}]
+        return state
+
+    with (
+        patch.dict(
+            sys.modules, {"langgraph": graph_package, "langgraph.graph": graph_module}
+        ),
+        patch.object(team_graph, "TRACE_DIR", tmp_path),
+    ):
+        unsupported = team_graph.answer_with_graph(
+            "How?",
+            agent_functions={
+                "router": router,
+                "researcher": researcher_omitting_cited_source,
+                "writer": writer,
+                "reviewer": reviewer,
+            },
+        )
+    assert unsupported["blocked_by"] == "citations"
 
 
 @pytest.mark.parametrize(

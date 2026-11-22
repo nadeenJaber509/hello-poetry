@@ -113,6 +113,27 @@ def test_command_examples_reject_invented_verbs_flags_and_shapes():
     assert verify_commands(answer, evidence) == answer.commands
 
 
+@pytest.mark.parametrize(
+    "snippet",
+    ["```bash\n$ poetry add pendulum\n```", "```bash\n$ poetry add pendulum\n"],
+)
+def test_shell_prompt_example_supports_variable_dependency_but_not_invented_commands(
+    snippet,
+):
+    answer = SupportAnswer(
+        answerable=True,
+        answer="Use the documented command.",
+        commands=[
+            "poetry add requests",
+            "poetry teleport requests",
+            "poetry add --imaginary requests",
+        ],
+        sources=["basic-usage.md"],
+        confidence="high",
+    )
+    assert verify_commands(answer, [snippet]) == answer.commands[1:]
+
+
 def _router(state):
     state["route"] = {"category": "how_to"}
     state["model_calls"] += 1
@@ -124,6 +145,7 @@ def _researcher(state):
     state["chunks"] = [
         {"source": "cli.md", "text": "Use poetry add flask", "similarity": 0.8}
     ]
+    state["evidence"] = [{"source": "cli.md", "quote": "Use poetry add flask"}]
     state["model_calls"] += 1
     state["trace"].append({"agent": "researcher"})
     return state
@@ -182,6 +204,54 @@ def test_reviewer_rejects_every_time(tmp_path):
         result = coordinator.answer_with_team("How?", max_review_rounds=2)
     assert result["answer"] == REFUSAL
     assert result["blocked_by"] == "reviewer"
+
+
+@pytest.mark.parametrize(
+    ("source", "blocked_by"),
+    [("usage.md", None), ("cli.md", "citations")],
+)
+def test_team_checks_citations_against_writer_evidence(tmp_path, source, blocked_by):
+    quote = "```bash\n$ poetry add pendulum\n```"
+
+    def researcher(state):
+        state["chunks"] = [{"source": "usage.md", "text": quote, "similarity": 0.8}]
+        state["evidence_chunks"] = [
+            *state["chunks"],
+            {"source": "cli.md", "text": "Other CLI details"},
+        ]
+        state["evidence"] = [{"source": "usage.md", "quote": quote}]
+        state["model_calls"] += 1
+        return state
+
+    def writer(state):
+        state["support_answer"] = SupportAnswer(
+            answerable=True,
+            answer="Use poetry add requests",
+            commands=["poetry add requests"],
+            sources=[source],
+            confidence="high",
+        )
+        state["model_calls"] += 1
+        return state
+
+    def reviewer(state):
+        state["review"] = {"approved": True, "problems": []}
+        state["model_calls"] += 1
+        return state
+
+    with patch.object(coordinator, "TRACE_DIR", tmp_path):
+        result = coordinator.answer_with_team(
+            "How do I add a dependency?",
+            agent_functions={
+                "router": _router,
+                "researcher": researcher,
+                "writer": writer,
+                "reviewer": reviewer,
+            },
+        )
+    assert result["blocked_by"] == blocked_by
+    if blocked_by is None:
+        assert result["commands"] == ["poetry add requests"]
 
 
 @pytest.mark.parametrize(
@@ -530,6 +600,53 @@ def test_researcher_does_not_promote_unrelated_or_below_threshold_passages():
         {"source": "commands.md", "text": "poetry new demo", "similarity": 0.2},
     ]
     assert select_research_chunks("What is the weather today?", chunks) == chunks[:3]
+
+
+def test_researcher_keeps_direct_dependency_example_in_writer_evidence():
+    chunks = [
+        {"source": "related.md", "text": "Dependency metadata", "similarity": 0.8},
+        {"source": "other.md", "text": "Package background", "similarity": 0.7},
+        {"source": "notes.md", "text": "General notes", "similarity": 0.6},
+        {
+            "source": "usage.md",
+            "text": "```bash\n$ poetry add pendulum\n",
+            "similarity": 0.5,
+        },
+    ]
+    research = {
+        "final_answer": json.dumps(
+            {"evidence": [{"source": "related.md", "quote": "Dependency metadata"}]}
+        ),
+        "model_calls": 1,
+        "total_tokens": 0,
+        "trace_path": "trace.json",
+        "tool_results": [],
+    }
+    state = {
+        "question": "How do I add a dependency using Poetry?",
+        "model": "fake",
+        "trace": [],
+        "model_calls": 0,
+        "total_tokens": 0,
+        "remaining_calls": 3,
+    }
+    with (
+        patch("hello_poetry.agents.search_docs", return_value=chunks),
+        patch("hello_poetry.agents.run_agent", return_value=research),
+    ):
+        result = run_researcher(state)
+    assert result["chunks"][0]["source"] == "usage.md"
+    assert {chunk["source"] for chunk in result["chunks"]} == {
+        "related.md",
+        "other.md",
+        "notes.md",
+        "usage.md",
+    }
+    assert result["evidence"][0] == {
+        "source": "usage.md",
+        "quote": chunks[3]["text"],
+    }
+    assert result["evidence"][1]["source"] == "related.md"
 
 
 @pytest.mark.parametrize("as_list", [False, True])

@@ -17,8 +17,8 @@ from hello_poetry.schemas import get_structured_answer
 from hello_poetry.tools import TOOL_FUNCTIONS, TOOL_SCHEMAS, search_docs
 
 
-def select_research_chunks(question: str, chunks: list[dict], k: int = 3) -> list[dict]:
-    """Prefer retrieved examples whose Poetry command appears in the question."""
+def _command_matches_question(question: str, text: str) -> bool:
+    """Recognize documented command examples relevant to a question."""
     words = set(re.findall(r"[a-z][a-z0-9-]*", question.casefold())) - {
         "a",
         "about",
@@ -43,21 +43,31 @@ def select_research_chunks(question: str, chunks: list[dict], k: int = 3) -> lis
         "where",
         "with",
     }
-
-    def rank(chunk: dict) -> tuple[bool, float]:
-        text = chunk["text"].casefold()
-        examples = re.findall(
-            r"```(?:bash|sh|shell|console)?\n(.*?)```", text, flags=re.DOTALL
+    text = text.casefold()
+    examples = re.findall(
+        r"```(?:bash|sh|shell|console)\n(.*?)(?:```|\Z)",
+        text,
+        flags=re.DOTALL,
+    )
+    commands = re.findall(r"`poetry\s+([a-z][a-z0-9-]*)\b", text)
+    for example in examples:
+        commands.extend(
+            re.findall(r"(?m)^\s*(?:\$\s*)?poetry\s+([a-z][a-z0-9-]*)\b", example)
         )
-        commands = re.findall(r"`poetry\s+([a-z][a-z0-9-]*)\b", text)
-        for example in examples:
-            commands.extend(
-                re.findall(r"(?m)^\s*poetry\s+([a-z][a-z0-9-]*)\b", example)
-            )
-        return bool(words.intersection(commands)), chunk["similarity"]
+    return bool(words.intersection(commands))
 
+
+def select_research_chunks(question: str, chunks: list[dict], k: int = 3) -> list[dict]:
+    """Prefer retrieved examples whose Poetry command appears in the question."""
     eligible = [chunk for chunk in chunks if chunk["similarity"] >= EVIDENCE_THRESHOLD]
-    return sorted(eligible, key=rank, reverse=True)[:k]
+    return sorted(
+        eligible,
+        key=lambda chunk: (
+            _command_matches_question(question, chunk["text"]),
+            chunk["similarity"],
+        ),
+        reverse=True,
+    )[:k]
 
 
 def _record(state, name, input_text, output, calls=1, tokens=0, seconds=0):
@@ -113,7 +123,7 @@ def run_researcher(state):
     state = dict(state)
     start = time.perf_counter()
     chunks = select_research_chunks(
-        state["question"], search_docs(state["question"], k=10)
+        state["question"], search_docs(state["question"], k=10), k=4
     )
     state["chunks"] = chunks
     # The bounded tool loop is retained for the Researcher; the directly retrieved
@@ -152,6 +162,21 @@ def run_researcher(state):
         state["evidence"] = items or verified
     except ValueError, KeyError, TypeError:
         state["evidence"] = verified
+    direct = next(
+        (
+            chunk
+            for chunk in chunks
+            if _command_matches_question(state["question"], chunk["text"])
+        ),
+        None,
+    )
+    if direct and not any(
+        _command_matches_question(state["question"], item["quote"])
+        for item in state["evidence"]
+    ):
+        state["evidence"].insert(
+            0, {"source": direct["source"], "quote": direct["text"][:1200]}
+        )
     state["research"] = research
     recorded = _record(
         state,

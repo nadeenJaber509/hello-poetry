@@ -128,13 +128,9 @@ def answer_with_graph(
         blocked_by = "reviewer"
     elif not answer.answerable or not answer.answer.strip():
         blocked_by = "evidence"
-    elif verify_citations(
-        answer, [c["source"] for c in state.get("evidence_chunks", state["chunks"])]
-    ):
+    elif verify_citations(answer, [item["source"] for item in state["evidence"]]):
         blocked_by = "citations"
-    elif verify_commands(
-        answer, [c["text"] for c in state.get("evidence_chunks", state["chunks"])]
-    ):
+    elif verify_commands(answer, [item["quote"] for item in state["evidence"]]):
         blocked_by = "commands"
     result = {
         "answer": REFUSAL if blocked_by else answer.answer,
