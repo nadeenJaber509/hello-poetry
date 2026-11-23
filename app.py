@@ -24,6 +24,7 @@ task = st.sidebar.radio(
         "Task 7 — Semantic Search",
         "Task 8 — Docs Search",
         "Task 9 — Poetry Chat",
+        "Task 10 — Poetry Support Team",
     ],
 )
 
@@ -699,3 +700,118 @@ elif task == "Task 9 — Poetry Chat":
                     "Please check your API key and connection."
                 )
                 st.caption(f"Error details: {error}")
+
+elif task == "Task 10 — Poetry Support Team":
+
+    from coordinator import run_support_team
+
+    st.header("Task 10: Poetry Support Team")
+    st.write(
+        "Ask a Poetry question and receive an answer "
+        "reviewed by a team of AI agents."
+    )
+
+    if "support_team_result" not in st.session_state:
+        st.session_state.support_team_result = None
+
+    question = st.text_area(
+        "Enter your question about Poetry",
+        placeholder="Example: How can I add a development dependency?",
+        key="support_team_question",
+    )
+
+    if st.button("Ask the Support Team", type="primary"):
+        if not question.strip():
+            st.warning("Please enter a question.")
+
+        else:
+            try:
+                with st.spinner("The support team is working..."):
+                    result = run_support_team(question.strip())
+
+                st.session_state.support_team_result = result
+
+            except (ValueError, RuntimeError, OSError, KeyError) as error:
+                st.error(
+                    "The Support Team could not complete the request."
+                )
+                st.exception(error)
+
+    result = st.session_state.support_team_result
+
+    if result is not None:
+        answer = result.get("answer")
+
+        if answer is not None:
+            st.subheader("Final Answer")
+
+            if isinstance(answer, dict):
+                st.markdown(
+                    answer.get("answer", "No answer returned.")
+                )
+
+                commands = answer.get("commands", [])
+                if commands:
+                    st.markdown("**Commands**")
+                    for command in commands:
+                        st.code(command, language="bash")
+
+                sources = answer.get("sources", [])
+                if sources:
+                    st.markdown("**Sources**")
+                    for source in sources:
+                        st.write(f"- {source}")
+
+                if answer.get("confidence") is not None:
+                    st.write(
+                        "**Confidence:**",
+                        answer["confidence"],
+                    )
+
+            else:
+                st.write(answer)
+
+        else:
+            st.error(
+                result.get(
+                    "error",
+                    "The Support Team did not return an answer.",
+                )
+            )
+
+        with st.expander("Team execution details"):
+            st.write("**Route:**")
+            st.text(result.get("route") or "No route returned.")
+
+            st.write("**Research:**")
+            st.json(result.get("research") or {})
+
+            st.write("**Draft:**")
+            st.text(result.get("draft") or "No draft returned.")
+            st.write("**Reviewer Decision:**")
+            st.write(
+                result.get("review_decision") or "Not available"
+            )
+
+            st.write("**Review Count:**")
+            st.write(result.get("review_count", 0))
+
+            st.write("**Reviewer Feedback:**")
+            st.write(
+                result.get("reviewer_feedback")
+                or "No reviewer feedback."
+            )
+            st.metric(
+                "Model calls",
+                result.get("model_calls", 0),
+            )
+
+            st.caption(
+                f"Maximum model calls: "
+                f"{result.get('max_model_calls', 'N/A')}"
+            )
+
+            if result.get("budget_exhausted"):
+                st.warning(
+                    "The model-call budget was exhausted."
+                )

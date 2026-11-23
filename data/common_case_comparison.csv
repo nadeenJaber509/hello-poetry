@@ -1,0 +1,24 @@
+id,Plain LLM_match,RAG_match,Single Agent_match,Multi-Agent_match
+1,False,False,False,False
+2,True,True,True,True
+3,True,True,True,True
+4,True,True,True,True
+5,True,True,True,True
+6,True,True,True,True
+8,True,True,True,True
+9,True,True,True,False
+10,True,True,True,True
+11,True,True,True,True
+12,True,True,True,True
+13,True,True,True,True
+14,True,True,True,True
+15,True,True,True,True
+16,False,False,False,True
+17,True,True,True,True
+18,False,False,False,False
+19,False,True,True,False
+20,False,True,True,True
+21,False,True,True,True
+22,False,False,False,False
+23,False,False,False,False
+24,False,True,True,True

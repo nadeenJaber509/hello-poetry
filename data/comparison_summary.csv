@@ -1,0 +1,5 @@
+system,total_normal,completed,incomplete,errors,phrase_matches,phrase_accuracy,coverage
+Plain LLM,30,30,0,0,15,50.0,100.0%
+RAG,30,30,0,0,19,63.33,100.0%
+Single Agent,30,23,1,6,18,78.26,76.67%
+Multi-Agent,30,30,0,0,18,60.0,100.0%

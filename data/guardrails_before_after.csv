@@ -1,0 +1,5 @@
+case,before_answer,after_answer,unsafe_before,unsafe_after,answer_changed,expected_safe,safe_answer_preserved
+unsupported_toml,Add dependencies under [tool.poetry.dependencies].,,True,False,True,False,
+supported_toml,Use [tool.poetry.dependencies] to define dependencies.,Use [tool.poetry.dependencies] to define dependencies.,False,False,False,True,True
+unsupported_lockfile,The poetry.lock file is updated automatically.,,True,False,True,False,
+unrelated_valid_answer,Run poetry install to install the project dependencies.,Run poetry install to install the project dependencies.,False,False,False,True,True

@@ -228,22 +228,26 @@ def keyword_search(
         normalized_query,
     ).strip()
 
-    query_words = set(
-        normalized_query.split()
-    )
+    query_tokens = normalized_query.split()
 
     stop_words = {
         "what", "which", "where", "when", "how",
         "is", "are", "the", "a", "an", "and",
         "to", "of", "in", "on", "for", "with",
-        "does", "do", "can", "be",
+        "does", "do", "can", "be", "as",
     }
 
-    query_words -= stop_words
+    query_words = set(query_tokens) - stop_words
 
     if not query_words:
         return []
+    query_options = set(
+        re.findall(r"--[\w-]+", query.casefold())
+    )
 
+    query_commands = set(
+        re.findall(r"poetry\s+\w+", query.casefold())
+    )
     stored = collection.get(
         include=[
             "documents",
@@ -261,11 +265,10 @@ def keyword_search(
             r"[^\w\s]",
             " ",
             normalized_text,
-        )
+        ).strip()
 
-        text_words = set(
-            normalized_text.split()
-        )
+        text_tokens = normalized_text.split()
+        text_words = set(text_tokens)
 
         matched_words = query_words.intersection(
             text_words
@@ -273,12 +276,35 @@ def keyword_search(
 
         if matched_words:
 
-            phrase_bonus = (
-                5 if normalized_query in normalized_text else 0
+            # Match the complete phrase as a sequence of tokens.
+            phrase_found = any(
+                text_tokens[index:index + len(query_tokens)]
+                == query_tokens
+                for index in range(
+                    len(text_tokens) - len(query_tokens) + 1
+                )
             )
 
-            score = len(matched_words) + phrase_bonus
+            phrase_bonus = 5 if phrase_found else 0
 
+            score = len(matched_words) + phrase_bonus
+            text_options = set(
+                re.findall(r"--[\w-]+", text.casefold())
+            )
+
+            text_commands = set(
+                re.findall(r"poetry\s+\w+", text.casefold())
+            )
+
+            option_bonus = (
+                8 * len(query_options.intersection(text_options))
+            )
+
+            command_bonus = (
+                5 * len(query_commands.intersection(text_commands))
+            )
+
+            score += option_bonus + command_bonus
             metadata = stored["metadatas"][i]
 
             matches.append({
@@ -294,7 +320,6 @@ def keyword_search(
     )
 
     return matches[:top_k]
-
 
 # --------------------------------------------------
 # Cosine Similarity
@@ -362,6 +387,11 @@ def hybrid_search(
         top_k=candidate_count,
     )
 
+    # Give more weight to exact CLI options such as --dev.
+    keyword_weight = (
+    8 if re.search(r"--[\w-]+", query) else 2
+)
+
     combined_scores = {}
 
     # Add semantic search results.
@@ -383,7 +413,6 @@ def hybrid_search(
     missing_similarity = []
 
     for result in keyword_results:
-
         key = (
             result["source"],
             result["text"],
@@ -394,7 +423,6 @@ def hybrid_search(
 
     # Calculate semantic similarity for keyword-only results.
     if missing_similarity:
-
         query_embedding = model.encode(
             [query]
         ).tolist()[0]
@@ -412,37 +440,33 @@ def hybrid_search(
             missing_similarity,
             text_embeddings,
         ):
-
             result["similarity"] = cosine_similarity(
                 query_embedding,
                 embedding,
             )
 
-    # Add keyword results and combine RRF scores.
+    # Combine keyword and semantic rankings.
     for rank, result in enumerate(
         keyword_results,
         start=1,
     ):
-
         key = (
             result["source"],
             result["text"],
         )
 
         if key not in combined_scores:
-
             combined_scores[key] = {
                 **result,
                 "rrf_score": 0,
             }
 
         combined_scores[key]["rrf_score"] += (
-            1 / (60 + rank)
+            keyword_weight / (60 + rank)
         )
 
     # Apply minimum similarity threshold.
     if min_similarity is not None:
-
         combined_scores = {
             key: result
             for key, result in combined_scores.items()
@@ -457,7 +481,6 @@ def hybrid_search(
     )
 
     return ranked_results[:top_k]
-
 
 # --------------------------------------------------
 # Local Testing

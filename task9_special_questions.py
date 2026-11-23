@@ -8,6 +8,8 @@ QUESTIONS = [
     "Why does Poetry run unit tests in parallel by default?",
     "How can I deploy an AWS Lambda function using only a Poetry command?",
     "Which is better: Poetry or another Python packaging tool, and why?",
+    "What happens if I run poetry install without a poetry.lock file?",
+    "Can Poetry automatically fix all security vulnerabilities in project dependencies?",
 ]
 
 
